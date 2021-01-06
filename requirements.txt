@@ -1,0 +1,10 @@
+graphviz
+gym-tetris
+matplotlib
+neat-python
+numpy
+opencv-python
+
+# dev stuff
+black
+isort
