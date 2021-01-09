@@ -45,7 +45,7 @@ class Board:
                 break
         return h
 
-    def find_current_piece(self):
+    def _find_current_piece(self):
         piece_array = []
         for y, row in enumerate(self.board):
             if len(self.board) - y <= self.height():
@@ -60,22 +60,19 @@ class Board:
         return np.array(piece_array, dtype=int)
 
     def detect_current_piece(self):
-        piece = self.find_current_piece()
+        piece = self._find_current_piece()
         if piece is None:
-            return None
+            return None, 0
         for name, shape in tetrominoes.items():
             for i in range(0, 4):
                 rp = np.rot90(piece, i)
                 if np.array_equal(rp, shape):
-                    return name
-        return None
+                    return name, i
+        return None, 0
 
 
-def detect_board(image_matrix):
-    # Generate a matrix of a blank, standard tetris board (10 x 20 blocks)
+def detect_board(board_image):
     board = np.zeros((20, 10), dtype=int)
-    # Calculate information about image matrix
-    board_image = image_matrix
     height, width, _ = np.shape(board_image)
     block_height = height / 20
     block_width = width / 10

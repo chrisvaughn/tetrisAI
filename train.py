@@ -5,10 +5,17 @@ import pickle
 import gym_tetris
 import neat
 import numpy as np
-from gym_tetris.actions import SIMPLE_MOVEMENT as available_actions
 from nes_py.wrappers import JoypadSpace
 
 import board_detect
+
+available_actions = [
+    ["right"],
+    ["left"],
+    ["A"],
+    ["down"],
+    ["NOOP"],
+]
 
 
 def current_piece_to_id(piece):
@@ -35,7 +42,7 @@ def eval_genomes(genomes, config):
         genome.fitness = eval_genome(genome, config, genome_id, True)
 
 
-def eval_genome(genome, config, genome_id=None, render=False):
+def eval_genome(genome, config, genome_id=None, render=False, debug=False):
     env = gym_tetris.make("TetrisA-v3")
     env = JoypadSpace(env, available_actions)
     env.reset()
@@ -44,69 +51,66 @@ def eval_genome(genome, config, genome_id=None, render=False):
 
     done = False
     fitness_current = 0.0
-    last_piece = None
-    last_actions = []
-    actions_to_keep = 30
-    new_piece = False
-    has_shifted_or_rotated = False
-    has_shifted_or_rotated_last_pieces = []
+    last_piece = (None, 0)
+    last_action = None
+    same_action_count = 0
+    last_lines_cleared = 0
 
     while not done:
         if render:
             env.render()
         image = env.render("rgb_array")
         cropped_image = image[49:209, 96:176]
-        # print(cropped_image.shape)
-        # viewer.imshow(cropped_image)
         board = board_detect.detect_board(cropped_image)
-        # board.print()
-        # print(board.height())
 
         current_piece = board.detect_current_piece()
-        if current_piece:
-            new_piece = current_piece != last_piece
-            last_piece = current_piece
-        if new_piece:
-            has_shifted_or_rotated_last_pieces.append(has_shifted_or_rotated)
-            has_shifted_or_rotated = False
+        if current_piece[0] is not None and current_piece[0] != last_piece[0]:
+            new_piece = True
+        else:
+            new_piece = False
 
-        piece_to_use = current_piece or last_piece
+        if current_piece[0]:
+            last_piece = current_piece
+            piece_to_use = current_piece
+        else:
+            piece_to_use = last_piece
 
         board = np.ndarray.flatten(board.board)
-        inputs = np.append(board, current_piece_to_id(piece_to_use))
-        # print(inputs)
+        inputs = np.append(
+            board, [current_piece_to_id(piece_to_use[0]), piece_to_use[1]]
+        )
+
         nnout = net.activate(inputs)
         action = nnout_to_action(nnout)
-
-        print(piece_to_use, available_actions[action])
-        if new_piece or available_actions[action] in (["NOOP"], ["down"]):
-            last_actions = [action]
+        if debug:
+            print(nnout, available_actions[action])
+        if last_action == action:
+            same_action_count += 1
         else:
-            has_shifted_or_rotated = True
-            last_actions.append(action)
+            last_action = action
+            same_action_count = 0
+
+        # print(piece_to_use, available_actions[action])
 
         state, rew, done, info = env.step(action)
-        fitness_current += rew
 
-        if len(last_actions) > actions_to_keep:
-            last_actions.pop(0)
-        # print(last_actions)
-        # print(has_shifted_or_rotated_last_pieces)
-        # if all of the last actions are the same then
-        if len(last_actions) >= actions_to_keep and len(set(last_actions)) <= 1:
-            fitness_current -= 10
-            done = True
+        # increase by 10 for every line cleared
+        fitness_current += (info["number_of_lines"] - last_lines_cleared) * 10
+        last_lines_cleared = info["number_of_lines"]
 
-        # if last 2 pieces weren't shifted or rotated then end this genome
-        if new_piece and len(has_shifted_or_rotated_last_pieces) > 2:
-            if not any(has_shifted_or_rotated_last_pieces):
-                fitness_current -= 5
-                done = True
-            has_shifted_or_rotated_last_pieces.pop(0)
+        if new_piece:
+            fitness_current += 1
 
-        if info["board_height"] > 10 and info["number_of_lines"] == 0:
+        if info["board_height"] > 15 and info["number_of_lines"] == 0:
             fitness_current -= 1
-            done = True
+
+        if same_action_count > 15 and last_action != available_actions.index(["down"]):
+            fitness_current -= 1
+
+        # make this go faster by skipping a few frames
+        for i in range(6):
+            if not done:
+                _, _, done, _ = env.step(available_actions.index(["NOOP"]))
 
     if genome_id:
         print(f"GenomeID: {genome_id}, Fitness: {fitness_current}")
@@ -126,20 +130,20 @@ def main():
         "config-feedforward",
     )
     # p = neat.Population(config)
-    p = neat.Checkpointer.restore_checkpoint("neat-checkpoint-315")
+    p = neat.Checkpointer.restore_checkpoint("neat-checkpoint-440")
 
     p.add_reporter(neat.StdOutReporter(True))
     stats = neat.StatisticsReporter()
 
     p.add_reporter(stats)
 
-    # Save the process after each 10 frames
-    p.add_reporter(neat.Checkpointer(1))
+    # Save the process after 1 generation
+    p.add_reporter(neat.Checkpointer(5))
 
-    # pe = neat.ParallelEvaluator(1, eval_genome)
-    # winner = p.run(pe.evaluate)
+    pe = neat.ParallelEvaluator(8, eval_genome)
+    winner = p.run(pe.evaluate)
 
-    winner = p.run(eval_genomes)
+    # winner = p.run(eval_genomes)
 
     with open("winner.pkl", "wb") as output:
         pickle.dump(winner, output, 1)
