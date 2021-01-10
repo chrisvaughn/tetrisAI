@@ -10,11 +10,11 @@ from nes_py.wrappers import JoypadSpace
 import board_detect
 
 available_actions = [
+    ["NOOP"],
     ["right"],
     ["left"],
     ["A"],
     ["down"],
-    ["NOOP"],
 ]
 
 
@@ -33,13 +33,14 @@ def current_piece_to_id(piece):
 
 
 def nnout_to_action(nnout):
-    action = nnout.index(max(nnout))
+    scaled = nnout[0] * (len(available_actions) - 1)
+    action = round(scaled)
     return action
 
 
 def eval_genomes(genomes, config):
     for genome_id, genome in genomes:
-        genome.fitness = eval_genome(genome, config, genome_id, True)
+        genome.fitness = eval_genome(genome, config, genome_id, True, True)
 
 
 def eval_genome(genome, config, genome_id=None, render=False, debug=False):
@@ -98,14 +99,11 @@ def eval_genome(genome, config, genome_id=None, render=False, debug=False):
         fitness_current += (info["number_of_lines"] - last_lines_cleared) * 10
         last_lines_cleared = info["number_of_lines"]
 
+        # lower the score proportional to height
+        fitness_current -= info["board_height"] // 20
+
         if new_piece:
             fitness_current += 1
-
-        if info["board_height"] > 15 and info["number_of_lines"] == 0:
-            fitness_current -= 1
-
-        if same_action_count > 15 and last_action != available_actions.index(["down"]):
-            fitness_current -= 1
 
         # make this go faster by skipping a few frames
         for i in range(6):
@@ -130,7 +128,7 @@ def main():
         "config-feedforward",
     )
     # p = neat.Population(config)
-    p = neat.Checkpointer.restore_checkpoint("neat-checkpoint-440")
+    p = neat.Checkpointer.restore_checkpoint("neat-checkpoint-51")
 
     p.add_reporter(neat.StdOutReporter(True))
     stats = neat.StatisticsReporter()
@@ -138,7 +136,7 @@ def main():
     p.add_reporter(stats)
 
     # Save the process after 1 generation
-    p.add_reporter(neat.Checkpointer(5))
+    p.add_reporter(neat.Checkpointer(10))
 
     pe = neat.ParallelEvaluator(8, eval_genome)
     winner = p.run(pe.evaluate)
