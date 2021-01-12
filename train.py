@@ -2,12 +2,11 @@
 
 import pickle
 
+import board_detect
 import gym_tetris
 import neat
 import numpy as np
 from nes_py.wrappers import JoypadSpace
-
-import board_detect
 
 available_actions = [
     ["NOOP"],
@@ -62,9 +61,10 @@ def eval_genome(genome, config, genome_id=None, render=False, debug=False):
             env.render()
         image = env.render("rgb_array")
         cropped_image = image[49:209, 96:176]
-        board = board_detect.detect_board(cropped_image)
+        board = board_detect.detect_board(image)
+        next_piece = board_detect.detect_next_piece(image)
 
-        current_piece = board.detect_current_piece()
+        current_piece = board.current_piece()
         if current_piece[0] is not None and current_piece[0] != last_piece[0]:
             new_piece = True
         else:

@@ -1,7 +1,6 @@
 graphviz
 gym-tetris
 matplotlib
-neat-python
 numpy
 opencv-python
 
