@@ -1,4 +1,5 @@
 import copy
+from typing import Union
 
 import numpy as np
 
@@ -11,28 +12,28 @@ class GameState:
         self.board = board
         self.current_piece = current_piece
         self.next_piece = next_piece
-        self._last_current_piece = None
-        self._new_piece_evaluated = False
+        self._last_piece: Union[Piece, None] = None
 
     def update(self, board: Board, current_piece: Piece, next_piece: Piece):
         self.board = board
+        self._last_piece = self.current_piece
         if current_piece is not None:
             self.current_piece = current_piece
         self.next_piece = next_piece
 
-    def new_piece(self) -> bool:
-        if self.current_piece is not None and self._last_current_piece is None:
-            self._last_current_piece = self.current_piece
-            return True
-        elif not np.array_equal(
-            self.current_piece.shape, self._last_current_piece.shape
-        ):
-            self._last_current_piece = self.current_piece
-            return True
-        return False
-
     def clone(self):
         return copy.deepcopy(self)
+
+    def new_piece(self) -> bool:
+        return (
+            self.current_piece
+            and self._last_piece is None
+            or (
+                self.current_piece
+                and self._last_piece
+                and self.current_piece.y < self._last_piece.y
+            )
+        )
 
     def move_down(self):
         if self.move_down_possible():

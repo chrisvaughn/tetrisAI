@@ -19,7 +19,7 @@ class Board:
         for y in self.board:
             print("|", end="")
             for x in y:
-                print(f"{x}" if x else " ", end="")
+                print(f"{x}", end="")
             print("|")
         print("-" * 12)
 

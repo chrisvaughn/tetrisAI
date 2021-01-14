@@ -17,6 +17,8 @@ def move_to_action(move):
         return AVAILABLE_ACTIONS.index(["right"])
     if move == "move_down":
         return AVAILABLE_ACTIONS.index(["down"])
+    if move == "noop":
+        return AVAILABLE_ACTIONS.index(["NOOP"])
 
 
 def main():
@@ -30,7 +32,6 @@ def main():
     while not done:
         env.render()
 
-        # print("Running Detectorist")
         image = env.render("rgb_array")
         d = Detectorist(image)
         if not gs:
@@ -41,8 +42,6 @@ def main():
             gs.update(d.board, d.current_piece, d.next_piece)
 
         if gs.new_piece() and not move_sequence:
-            # gs._board.print()
-
             weights = {
                 "holes": -0.4,
                 "roughness": -0.2,
@@ -63,12 +62,12 @@ def main():
 
         if move_sequence:
             action = move_to_action(move_sequence.pop(0))
-            # print(availabe_actions[action])
         else:
             action = AVAILABLE_ACTIONS.index(["down"])
+
         _, _, done, _ = env.step(action)
         if not done:
-            state, reward, done, info = env.step(AVAILABLE_ACTIONS.index(["NOOP"]))
+            state, reward, done, info = env.step(AVAILABLE_ACTIONS.index(["down"]))
 
     input("Game Over. Press enter to close emulator.")
     env.close()

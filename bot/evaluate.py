@@ -51,6 +51,8 @@ class Move:
         if self.translation > 0:
             for _ in range(abs(self.translation)):
                 seq.append("move_right")
+        if not seq:
+            seq.append("noop")
         return seq
 
 
