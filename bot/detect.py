@@ -43,7 +43,7 @@ class Detectorist:
         for piece in Tetrominoes:
             for i in range(0, 4):
                 rp = np.rot90(current_piece, i)
-                if np.array_equal(rp, piece.shape):
+                if np.array_equal(rp, piece.detection_shape):
                     self._current_piece = piece.clone()
                     self._current_piece.set_position(at_x, at_y)
                     return
@@ -53,7 +53,7 @@ class Detectorist:
         next_image_arr = _scan_image(4, 4, next_piece_image)
         pruned, _ = _prune_piece_array(next_image_arr)
         for piece in Tetrominoes:
-            if np.array_equal(pruned, piece.shape):
+            if np.array_equal(pruned, piece.detection_shape):
                 self._next_piece = piece
                 return
 
