@@ -2,7 +2,7 @@ import math
 import random
 import time
 from dataclasses import dataclass
-from typing import List, Tuple
+from typing import List, Tuple, Union
 
 from tetris import Board, GameState
 
@@ -12,7 +12,9 @@ def scoring_v1(state: GameState, weights) -> Tuple[float, dict]:
         "holes": state.count_holes(),
         "roughness": state.roughness(),
         "lines": state.check_full_lines(),
-        "height": state.cumulative_height(),
+        "relative_height": state.relative_height(),
+        "absolute_height": state.absolute_height(),
+        "cumulative_height": state.cumulative_height(),
     }
     score = 0
     for k in weights.keys():
@@ -40,6 +42,7 @@ class Move:
     translation: int
     score: float
     score_parameters: dict
+    final_state: Union[GameState, None]
 
     def to_sequence(self) -> List[str]:
         seq = []
@@ -61,7 +64,12 @@ class Evaluator:
         self._initial_state = state
         self._weights = weights
 
-    def evaluate_all_moves(self, initial_state: GameState) -> List[Move]:
+    def evaluate_all_moves(
+        self,
+        initial_state: GameState,
+        lookahead: bool = True,
+        collect_final_state: bool = False,
+    ) -> List[Move]:
         possible_moves: List[Move] = []
         meaningful_rotations = initial_state.current_piece.valid_rotations + 1
         for rot in range(meaningful_rotations):
@@ -69,35 +77,58 @@ class Evaluator:
                 state = initial_state.clone()
                 execute_move(state, rot, t)
 
-                # move next_piece to current_piece and do it again
-                next_piece_scores = []
-                state.current_piece = state.next_piece
-                x = math.floor(Board.columns / 2) - math.ceil(
-                    len(state.current_piece.shape[0]) / 2
-                )
-                state.current_piece.set_position(x, 0)
-                meaningful_rotations = state.current_piece.valid_rotations + 1
-                for rot2 in range(meaningful_rotations):
-                    for t2 in range(-5, 5):
-                        execute_move(state, rot, t)
+                if lookahead:
+                    lookahead_state = state.clone()
+                    # move next_piece to current_piece and do it again
+                    next_piece_scores = []
+                    lookahead_state.current_piece = lookahead_state.next_piece
+                    x = math.floor(Board.columns / 2) - math.ceil(
+                        len(lookahead_state.current_piece.shape[0]) / 2
+                    )
+                    lookahead_state.current_piece.set_position(x, 0)
+                    meaningful_rotations = (
+                        lookahead_state.current_piece.valid_rotations + 1
+                    )
+                    for rot2 in range(meaningful_rotations):
+                        for t2 in range(-5, 5):
+                            execute_move(lookahead_state, rot2, t2)
+                            score, parameters = scoring_v1(
+                                lookahead_state, self._weights
+                            )
+                            move = Move(rot, t, score, parameters, None)
+                            if collect_final_state:
+                                move.final_state = state
+                            next_piece_scores.append(move)
+                    best_move_with_look_ahead = sorted(
+                        next_piece_scores,
+                        key=lambda x: x.score,
+                        reverse=True,
+                    )[0]
+                    possible_moves.append(best_move_with_look_ahead)
+                else:
+                    score, parameters = scoring_v1(state, self._weights)
+                    move = Move(rot, t, score, parameters, None)
+                    if collect_final_state:
+                        move.final_state = state
+                    possible_moves.append(move)
 
-                        score, parameters = scoring_v1(state, self._weights)
-                        next_piece_scores.append(Move(rot, t, score, parameters))
-                best_move_with_look_ahead = sorted(
-                    next_piece_scores,
-                    key=lambda x: x.score,
-                    reverse=True,
-                )[0]
-                possible_moves.append(best_move_with_look_ahead)
         return possible_moves
 
-    def best_move(self) -> Tuple[Move, float]:
+    def best_move(
+        self, lookahead=True, collect_final_state=False, debug=False
+    ) -> Tuple[Move, float]:
         start = time.time()
         all_moves = sorted(
-            self.evaluate_all_moves(self._initial_state),
+            self.evaluate_all_moves(
+                self._initial_state,
+                lookahead=lookahead,
+                collect_final_state=collect_final_state,
+            ),
             key=lambda x: x.score,
             reverse=True,
         )
+        if debug:
+            print(all_moves)
         best_move = all_moves[0]
         end = time.time()
         return best_move, end - start
@@ -125,3 +156,10 @@ class Evaluator:
             sequence.append("move_down")
 
         return sequence
+
+    def compare_initial_to_expected(self, expect_state: GameState) -> bool:
+        if expect_state is None:
+            print("Expected State is None, skipping diff")
+            return True
+
+        return self._initial_state.diff_state(expect_state)

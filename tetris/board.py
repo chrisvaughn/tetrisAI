@@ -10,6 +10,7 @@ class Board:
 
     def __init__(self, board: np.ndarray):
         self.board = board
+        self._peaks = None
 
     def clone(self):
         return copy.deepcopy(self)
@@ -23,6 +24,9 @@ class Board:
             print("|")
         print("-" * 12)
 
+    def updated(self):
+        self._peaks = None
+
     def height(self) -> int:
         h = 0
         for row in reversed(self.board):
@@ -33,11 +37,15 @@ class Board:
         return h
 
     def _get_peaks(self) -> List[int]:
+        if self._peaks:
+            return self._peaks
+
         peaks = [Board.rows] * Board.columns
         for y in range(Board.rows):
             for x in range(Board.columns):
                 if self.board[y][x] != 0 and peaks[x] == Board.rows:
                     peaks[x] = y
+        self._peaks = peaks
         return peaks
 
     def count_holes(self) -> int:
@@ -62,3 +70,7 @@ class Board:
         for i in range(len(peaks) - 1):
             roughness += abs(peaks[i] - peaks[i + 1])
         return roughness
+
+    def relative_height(self) -> int:
+        peaks = self._get_peaks()
+        return max(peaks) - min(peaks)

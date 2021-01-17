@@ -21,6 +21,15 @@ class GameState:
             self.current_piece = current_piece
         self.next_piece = next_piece
 
+    def diff_state(self, other_state: "GameState") -> bool:
+        other_state.board.board[other_state.board.board > 1] = 1
+        if np.array_equal(self.board.board, other_state.board.board):
+            print("States did match")
+            return True
+        else:
+            print("States do not match")
+            return False
+
     def clone(self):
         return copy.deepcopy(self)
 
@@ -109,6 +118,7 @@ class GameState:
                 self.board.board[
                     self.current_piece.y + y, self.current_piece.x + x
                 ] = value
+        self.board.updated()
 
     def check_game_over(self):
         for (y, x), value in np.ndenumerate(self.current_piece.shape):
@@ -133,3 +143,9 @@ class GameState:
 
     def roughness(self) -> int:
         return self.board.roughness()
+
+    def relative_height(self) -> int:
+        return self.board.relative_height()
+
+    def absolute_height(self) -> int:
+        return self.board.height()
