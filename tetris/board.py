@@ -74,3 +74,6 @@ class Board:
     def relative_height(self) -> int:
         peaks = self._get_peaks()
         return max(peaks) - min(peaks)
+
+    def game_over(self) -> bool:
+        return self.board.all()

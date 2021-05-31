@@ -32,7 +32,16 @@ class Detectorist:
         self._detect_next_piece()
 
     def _detect_board(self):
-        board_image = self.image[49:209, 96:176]
+        h = self.image.shape[0]
+        w = self.image.shape[1]
+        board_width_start = w / 2.6666
+        board_width_end = board_width_start + w / 3.2
+        board_height_start = h / 6
+        board_height_end = h - (h / 9.4)
+        board_image = self.image[
+            int(board_height_start) : int(board_height_end),
+            int(board_width_start) : int(board_width_end),
+        ]
         board = _scan_image(20, 10, board_image)
         self._board = Board(board)
 
@@ -49,8 +58,20 @@ class Detectorist:
                     return
 
     def _detect_next_piece(self):
-        next_piece_image = self.image[112:142, 192:224]
+        h = self.image.shape[0]
+        w = self.image.shape[1]
+        width_start = 2 * (w / 2.6666)
+        width_end = width_start + ((w / 2.6666) / 3)
+        height_start = h / 2.1
+        height_end = (h / 2.1) + h / 8
+        next_piece_image = self.image[
+            int(height_start) : int(height_end),
+            int(width_start) : int(width_end),
+        ]
         next_image_arr = _scan_image(4, 4, next_piece_image)
+        if not next_image_arr.any():
+            self._next_piece = None
+            return
         pruned, _ = _prune_piece_array(next_image_arr)
         for piece in Tetrominoes:
             if np.array_equal(pruned, piece.detection_shape):

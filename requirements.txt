@@ -1,8 +1,6 @@
-graphviz
-gym-tetris
-matplotlib
 numpy
 opencv-python
+pyobjc-framework-quartz
 
 # dev stuff
 black

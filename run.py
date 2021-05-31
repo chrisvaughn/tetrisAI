@@ -1,43 +1,36 @@
 #!/usr/bin/env python
 
 import argparse
+import time
 
-import gym_tetris
-from gym_tetris.actions import SIMPLE_MOVEMENT as AVAILABLE_ACTIONS
-from nes_py.wrappers import JoypadSpace
+import cv2
 
 from bot import Detectorist, Evaluator, execute_move
+from emulator import capture, keyboard
 from tetris import GameState
 
 
-def move_to_action(move):
-    if move == "rot_ccw":
-        return AVAILABLE_ACTIONS.index(["B"])
-    if move == "move_left":
-        return AVAILABLE_ACTIONS.index(["left"])
-    if move == "move_right":
-        return AVAILABLE_ACTIONS.index(["right"])
-    if move == "move_down":
-        return AVAILABLE_ACTIONS.index(["down"])
-    if move == "noop":
-        return AVAILABLE_ACTIONS.index(["NOOP"])
-
-
 def main(step=False, diff_states=False, all_moves=False):
-    env = gym_tetris.make("TetrisA-v3")
-    env = JoypadSpace(env, AVAILABLE_ACTIONS)
-    env.reset()
-
     gs = None
     move_sequence = []
-    done = False
     final_expected_state = None
     move_count = 0
-    while not done:
-        env.render()
+    emulator_pid = capture.get_emulator_pid("Nestopia")
+    last_time = time.time()
+    for screen in capture.screenshot_generator():
+        move = None
+        # print("fps: {0}".format(1 / (time.time() - last_time)))
+        last_time = time.time()
+        if cv2.waitKey(25) == ord("q"):
+            cv2.destroyAllWindows()
+            break
 
-        image = env.render("rgb_array")
-        d = Detectorist(image)
+        d = Detectorist(screen)
+        # d.board.print()
+        # if d.board.game_over():
+        #     print("Game Over")
+        #     return
+
         if not gs:
             print("Building GameState")
             gs = GameState(d.board, d.current_piece, d.next_piece)
@@ -78,16 +71,9 @@ def main(step=False, diff_states=False, all_moves=False):
                 input("Press enter to execute move.")
 
         if move_sequence:
-            action = move_to_action(move_sequence.pop(0))
-        else:
-            action = AVAILABLE_ACTIONS.index(["down"])
+            move = move_sequence.pop(0)
 
-        _, _, done, _ = env.step(action)
-        if not done:
-            state, reward, done, info = env.step(AVAILABLE_ACTIONS.index(["down"]))
-
-    input("Game Over. Press enter to close emulator.")
-    env.close()
+        keyboard.send_event(emulator_pid, move)
 
 
 if __name__ == "__main__":
