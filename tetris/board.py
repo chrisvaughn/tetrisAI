@@ -8,7 +8,9 @@ class Board:
     columns: int = 10
     rows: int = 20
 
-    def __init__(self, board: np.ndarray):
+    def __init__(self, board: np.ndarray = None):
+        if board is None:
+            board = np.zeros((Board.rows, Board.columns), dtype=int)
         self.board = board
         self._peaks = None
 
