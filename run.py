@@ -1,35 +1,36 @@
 #!/usr/bin/env python
 
 import argparse
-import time
 
 import cv2
 
 from bot import Detectorist, Evaluator, execute_move
-from emulator import capture, keyboard
+from emulator import capture, keyboard, manage
 from tetris import GameState
 
 
 def main(step=False, diff_states=False, all_moves=False):
+    emulator = manage.launch()
+
     gs = None
     move_sequence = []
     final_expected_state = None
     move_count = 0
-    emulator_pid = capture.get_emulator_pid("Nestopia")
-    last_time = time.time()
+    drop_enabled = False
+    lines_completed = 0
     for screen in capture.screenshot_generator():
         move = None
-        # print("fps: {0}".format(1 / (time.time() - last_time)))
-        last_time = time.time()
+        hold = None
         if cv2.waitKey(25) == ord("q"):
             cv2.destroyAllWindows()
             break
 
         d = Detectorist(screen)
-        # d.board.print()
-        # if d.board.game_over():
-        #     print("Game Over")
-        #     return
+        if d.board.game_over():
+            print("Game Over")
+            print(f"Lines Completed: {lines_completed}")
+            manage.destroy(emulator)
+            return
 
         if not gs:
             print("Building GameState")
@@ -39,14 +40,16 @@ def main(step=False, diff_states=False, all_moves=False):
             gs.update(d.board, d.current_piece, d.next_piece)
 
         if gs.new_piece() and not move_sequence:
+            keyboard.send_event_off(emulator.pid, "move_down")
+            drop_enabled = False
             move_count += 1
             weights = {
-                "holes": -0.9,
-                "roughness": 0,
-                "lines": 1,
+                "holes": -5,
+                "roughness": -0.6,
+                "lines": 5,
                 "relative_height": -0.7,
                 "absolute_height": -0.8,
-                "cumulative_height": 0,
+                "cumulative_height": -0.5,
             }
             aie = Evaluator(gs, weights)
             if diff_states:
@@ -64,16 +67,21 @@ def main(step=False, diff_states=False, all_moves=False):
                 execute_move(temp_state, best_move.rotations, best_move.translation)
                 temp_state.board.print()
             move_sequence = best_move.to_sequence()
-            print(f"Move {move_count} found in {int(time_taken*1000)} ms.")
-            print(f"\tScore: {best_move.score:.1f}")
-            print(f"\tSequence: {move_sequence}")
+            # print(f"Move {move_count} found in {int(time_taken*1000)} ms.")
+            # print(f"\tSequence: {move_sequence}")
+            # print(f"\tScore: {best_move.score:.1f}")
+            if best_move.lines_completed:
+                lines_completed += best_move.lines_completed
+
             if step:
                 input("Press enter to execute move.")
 
         if move_sequence:
             move = move_sequence.pop(0)
-
-        keyboard.send_event(emulator_pid, move)
+            keyboard.send_event(emulator.pid, move, hold)
+            drop_enabled = True
+        elif drop_enabled:
+            keyboard.send_event_on(emulator.pid, "move_down")
 
 
 if __name__ == "__main__":

@@ -43,6 +43,7 @@ class Move:
     score: float
     score_parameters: dict
     final_state: Union[GameState, None]
+    lines_completed: int
 
     def to_sequence(self) -> List[str]:
         seq = []
@@ -95,7 +96,14 @@ class Evaluator:
                             score, parameters = scoring_v1(
                                 lookahead_state, self._weights
                             )
-                            move = Move(rot, t, score, parameters, None)
+                            move = Move(
+                                rot,
+                                t,
+                                score,
+                                parameters,
+                                None,
+                                lookahead_state.check_full_lines(),
+                            )
                             if collect_final_state:
                                 move.final_state = state
                             next_piece_scores.append(move)
@@ -107,7 +115,9 @@ class Evaluator:
                     possible_moves.append(best_move_with_look_ahead)
                 else:
                     score, parameters = scoring_v1(state, self._weights)
-                    move = Move(rot, t, score, parameters, None)
+                    move = Move(
+                        rot, t, score, parameters, None, parameters["values"]["lines"]
+                    )
                     if collect_final_state:
                         move.final_state = state
                     possible_moves.append(move)
@@ -124,7 +134,7 @@ class Evaluator:
                 lookahead=lookahead,
                 collect_final_state=collect_final_state,
             ),
-            key=lambda x: x.score,
+            key=lambda x: (x.score, x.lines_completed),
             reverse=True,
         )
         if debug:

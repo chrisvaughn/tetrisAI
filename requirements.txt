@@ -1,7 +1,0 @@
-numpy
-opencv-python
-pyobjc-framework-quartz
-
-# dev stuff
-black
-isort
