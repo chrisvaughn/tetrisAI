@@ -1,8 +1,29 @@
+import os
 from typing import Tuple, Union
 
 import cv2
 import numpy as np
 from tetris import Board, Piece, Tetrominoes
+
+cur_dir = os.path.dirname(os.path.abspath(__file__))
+
+#
+# lines:
+# top left: 150x, 22y
+# top right: 176x, 22y
+# bottom left: 150x, 32y
+# bottom right: 176x, 32y
+
+image_path = os.path.join(cur_dir, "templates")
+piece_templates = {
+    "t": cv2.imread(os.path.join(image_path, "t.png"), cv2.IMREAD_GRAYSCALE),
+    "i": cv2.imread(os.path.join(image_path, "i.png"), cv2.IMREAD_GRAYSCALE),
+    "z": cv2.imread(os.path.join(image_path, "z.png"), cv2.IMREAD_GRAYSCALE),
+    "s": cv2.imread(os.path.join(image_path, "s.png"), cv2.IMREAD_GRAYSCALE),
+    "l": cv2.imread(os.path.join(image_path, "l.png"), cv2.IMREAD_GRAYSCALE),
+    "j": cv2.imread(os.path.join(image_path, "j.png"), cv2.IMREAD_GRAYSCALE),
+    "o": cv2.imread(os.path.join(image_path, "o.png"), cv2.IMREAD_GRAYSCALE),
+}
 
 
 class Detectorist:
@@ -11,6 +32,9 @@ class Detectorist:
         self._board: Union[Board, None] = None
         self._current_piece: Union[Piece, None] = None
         self._next_piece: Union[Piece, None] = None
+
+        if np.shape(self.image) != (240, 256):
+            raise Exception("image needs to be 256x240 and gray scale")
 
         self._detect()
 
@@ -32,16 +56,8 @@ class Detectorist:
         self._detect_next_piece()
 
     def _detect_board(self):
-        h = self.image.shape[0]
-        w = self.image.shape[1]
-        board_width_start = w / 2.6666
-        board_width_end = board_width_start + w / 3.2
-        board_height_start = h / 6
-        board_height_end = h - (h / 9.4)
-        board_image = self.image[
-            int(board_height_start) : int(board_height_end),
-            int(board_width_start) : int(board_width_end),
-        ]
+        board_image = self.image[47:209, 95:176]
+        # cv2.imshow("Board Image", board_image)
         board = _scan_image(20, 10, board_image)
         self._board = Board(board)
 
@@ -58,25 +74,16 @@ class Detectorist:
                     return
 
     def _detect_next_piece(self):
-        h = self.image.shape[0]
-        w = self.image.shape[1]
-        width_start = 2 * (w / 2.6666)
-        width_end = width_start + ((w / 2.6666) / 3)
-        height_start = h / 2.1
-        height_end = (h / 2.1) + h / 8
-        next_piece_image = self.image[
-            int(height_start) : int(height_end),
-            int(width_start) : int(width_end),
-        ]
-        next_image_arr = _scan_image(4, 4, next_piece_image)
-        if not next_image_arr.any():
-            self._next_piece = None
-            return
-        pruned, _ = _prune_piece_array(next_image_arr)
-        for piece in Tetrominoes:
-            if np.array_equal(pruned, piece.detection_shape):
-                self._next_piece = piece
-                return
+        next_piece_image = self.image[111:144, 191:223]
+        for name, template in piece_templates.items():
+            res = cv2.matchTemplate(next_piece_image, template, cv2.TM_CCOEFF_NORMED)
+            min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
+            if max_val > 0.9:
+                for piece in Tetrominoes:
+                    if piece.name == name:
+                        self._next_piece = piece
+                        return
+        self._next_piece = None
 
     def _find_current_piece(self) -> Tuple[Union[np.ndarray, None], int, int]:
         piece_array = np.empty((0, Board.columns), int)
@@ -110,7 +117,7 @@ def _prune_piece_array(piece_array: np.ndarray) -> Tuple[np.ndarray, int]:
 
 def _scan_image(num_rows: int, num_columns: int, image: np.ndarray) -> np.ndarray:
     narray = np.zeros((num_rows, num_columns), dtype=int)
-    height, width, _ = np.shape(image)
+    height, width = np.shape(image)
     block_height = height / num_rows
     block_width = width / num_columns
     for y in range(num_rows):

@@ -51,10 +51,10 @@ def screenshot_generator():
                 print("Can't find emulator window")
                 return
             mon = {
-                "top": location["y"] + titlebar + buffer_y,
+                "top": location["y"] + titlebar,
                 "left": location["x"],
                 "width": location["width"],
-                "height": location["height"] - titlebar - 2 * buffer_y,
+                "height": location["height"] - titlebar,
             }
 
             img = sct.grab(mon)

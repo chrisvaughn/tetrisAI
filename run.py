@@ -25,7 +25,13 @@ def main(step=False, diff_states=False, all_moves=False):
             cv2.destroyAllWindows()
             break
 
+        # cv2.imshow("Full", screen)
+        if screen.shape[0] > 240:
+            screen = cv2.resize(screen, (256, 240), interpolation=cv2.INTER_AREA)
+        screen = cv2.cvtColor(screen, cv2.COLOR_BGR2GRAY)
+        # cv2.imshow("Resized", screen)
         d = Detectorist(screen)
+        # d.board.print()
         if d.board.game_over():
             print("Game Over")
             print(f"Lines Completed: {lines_completed}")
@@ -67,8 +73,8 @@ def main(step=False, diff_states=False, all_moves=False):
                 execute_move(temp_state, best_move.rotations, best_move.translation)
                 temp_state.board.print()
             move_sequence = best_move.to_sequence()
-            # print(f"Move {move_count} found in {int(time_taken*1000)} ms.")
-            # print(f"\tSequence: {move_sequence}")
+            print(f"Move {move_count} found in {int(time_taken*1000)} ms.")
+            print(f"\tSequence: {move_sequence}")
             # print(f"\tScore: {best_move.score:.1f}")
             if best_move.lines_completed:
                 lines_completed += best_move.lines_completed

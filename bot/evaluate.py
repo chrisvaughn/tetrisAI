@@ -47,8 +47,11 @@ class Move:
 
     def to_sequence(self) -> List[str]:
         seq = []
-        for i in range(self.rotations):
-            seq.append("rot_ccw")
+        if self.rotations == 3:
+            seq.append("rot_cw")
+        else:
+            for i in range(self.rotations):
+                seq.append("rot_ccw")
         if self.translation < 0:
             for _ in range(abs(self.translation)):
                 seq.append("move_left")
