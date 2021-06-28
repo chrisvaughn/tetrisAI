@@ -3,16 +3,10 @@ from typing import Tuple, Union
 
 import cv2
 import numpy as np
+import pytesseract
 from tetris import Board, Piece, Tetrominoes
 
 cur_dir = os.path.dirname(os.path.abspath(__file__))
-
-#
-# lines:
-# top left: 150x, 22y
-# top right: 176x, 22y
-# bottom left: 150x, 32y
-# bottom right: 176x, 32y
 
 image_path = os.path.join(cur_dir, "templates")
 piece_templates = {
@@ -27,12 +21,14 @@ piece_templates = {
 
 
 class Detectorist:
-    def __init__(self, image: np.ndarray):
+    def __init__(self, image: np.ndarray, lines: int, next_piece: int):
         self.image: np.ndarray = image
         self._board: Union[Board, None] = None
         self._current_piece: Union[Piece, None] = None
         self._next_piece: Union[Piece, None] = None
-
+        self._detect_lines_every = lines
+        self._detect_next_piece_every = next_piece
+        self._detection_count: int = 0
         if np.shape(self.image) != (240, 256):
             raise Exception("image needs to be 256x240 and gray scale")
 
@@ -50,10 +46,23 @@ class Detectorist:
     def next_piece(self) -> Piece:
         return self._next_piece
 
+    def update(self, image: np.ndarray):
+        self.image = image
+        if np.shape(self.image) != (240, 256):
+            raise Exception("image needs to be 256x240 and gray scale")
+
+        self._detect()
+
     def _detect(self):
         self._detect_board()
         self._detect_current_piece()
-        self._detect_next_piece()
+        if (self._detection_count % self._detect_next_piece_every) == 0:
+            self._detect_next_piece()
+        # if (self._detection_count % self._detect_lines_every) == 0:
+        #     l = self._detect_lines_completed()
+        #     print(l)
+
+        self._detection_count += 1
 
     def _detect_board(self):
         board_image = self.image[47:209, 95:176]
@@ -70,7 +79,9 @@ class Detectorist:
                 rp = np.rot90(current_piece, i)
                 if np.array_equal(rp, piece.detection_shape):
                     self._current_piece = piece.clone()
-                    self._current_piece.set_position(at_x, at_y)
+                    self._current_piece.set_position(
+                        at_x - piece.x_offset, at_y + piece.y_offset
+                    )
                     return
 
     def _detect_next_piece(self):
@@ -84,6 +95,17 @@ class Detectorist:
                         self._next_piece = piece
                         return
         self._next_piece = None
+
+    def _detect_lines_completed(self):
+        lines_image = self.image[20:34, 150:178]
+        height, width = np.shape(lines_image)
+        lines_image = cv2.resize(
+            lines_image, dsize=(width * 2, height * 2), interpolation=cv2.INTER_LINEAR
+        )
+        cv2.imshow("Lines Image", lines_image)
+        custom_oem_psm_config = "-l eng --oem 1 --psm 7"
+        lines = pytesseract.image_to_string(lines_image, config=custom_oem_psm_config)
+        return lines.strip()
 
     def _find_current_piece(self) -> Tuple[Union[np.ndarray, None], int, int]:
         piece_array = np.empty((0, Board.columns), int)

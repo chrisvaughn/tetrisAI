@@ -204,7 +204,7 @@ def test_detectorist():
             img = cv2.resize(img, (256, 240), interpolation=cv2.INTER_AREA)
 
         data = np.asarray(img)
-        d = Detectorist(data)
+        d = Detectorist(data, 10, 5)
         assert d.current_piece.name == tc["current_piece"]
         assert d.next_piece.name == tc["next_piece"]
         if "board" in tc:

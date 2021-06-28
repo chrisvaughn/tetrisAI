@@ -13,9 +13,18 @@ def launch():
     time.sleep(12)
     keyboard.send_event(process.pid, "return")
     time.sleep(1)
-    keyboard.send_event(process.pid, "return")
-    time.sleep(1)
-    keyboard.send_event(process.pid, "return")
+
+    seq = [
+        "return",
+        "return",
+        "move_down",
+        "move_right",
+        "move_right",
+        "return",
+    ]
+    for cmd in seq:
+        keyboard.send_event(process.pid, cmd)
+        time.sleep(1)
 
     return process
 

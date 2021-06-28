@@ -18,8 +18,8 @@ def main(step=False, diff_states=False, all_moves=False):
     move_count = 0
     drop_enabled = False
     lines_completed = 0
+    detector = None
     for screen in capture.screenshot_generator():
-        move = None
         hold = None
         if cv2.waitKey(25) == ord("q"):
             cv2.destroyAllWindows()
@@ -30,9 +30,12 @@ def main(step=False, diff_states=False, all_moves=False):
             screen = cv2.resize(screen, (256, 240), interpolation=cv2.INTER_AREA)
         screen = cv2.cvtColor(screen, cv2.COLOR_BGR2GRAY)
         # cv2.imshow("Resized", screen)
-        d = Detectorist(screen)
-        # d.board.print()
-        if d.board.game_over():
+        if detector is None:
+            detector = Detectorist(screen, 10, 5)
+        else:
+            detector.update(screen)
+        # detector.board.print()
+        if detector.board.game_over():
             print("Game Over")
             print(f"Lines Completed: {lines_completed}")
             manage.destroy(emulator)
@@ -40,10 +43,10 @@ def main(step=False, diff_states=False, all_moves=False):
 
         if not gs:
             print("Building GameState")
-            gs = GameState(d.board, d.current_piece, d.next_piece)
+            gs = GameState(detector.board, detector.current_piece, detector.next_piece)
         else:
             # print("Updating GameState")
-            gs.update(d.board, d.current_piece, d.next_piece)
+            gs.update(detector.board, detector.current_piece, detector.next_piece)
 
         if gs.new_piece() and not move_sequence:
             keyboard.send_event_off(emulator.pid, "move_down")
@@ -85,7 +88,7 @@ def main(step=False, diff_states=False, all_moves=False):
         if move_sequence:
             move = move_sequence.pop(0)
             keyboard.send_event(emulator.pid, move, hold)
-            drop_enabled = True
+            drop_enabled = False
         elif drop_enabled:
             keyboard.send_event_on(emulator.pid, "move_down")
 
