@@ -34,7 +34,6 @@ def main(step=False, diff_states=False, all_moves=False):
             detector = Detectorist(screen, 10, 5)
         else:
             detector.update(screen)
-        # detector.board.print()
         if detector.board.game_over():
             print("Game Over")
             print(f"Lines Completed: {lines_completed}")
@@ -47,6 +46,7 @@ def main(step=False, diff_states=False, all_moves=False):
         else:
             # print("Updating GameState")
             gs.update(detector.board, detector.current_piece, detector.next_piece)
+        gs.display()
 
         if gs.new_piece() and not move_sequence:
             keyboard.send_event_off(emulator.pid, "move_down")

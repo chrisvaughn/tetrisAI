@@ -82,6 +82,7 @@ class Detectorist:
                     self._current_piece.set_position(
                         at_x - piece.x_offset, at_y + piece.y_offset
                     )
+                    self._current_piece.set_rotations(i)
                     return
 
     def _detect_next_piece(self):

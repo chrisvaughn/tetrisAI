@@ -22,6 +22,7 @@ class Piece:
         self.y = 0
         self.x_offset = x_offset
         self.y_offset = y_offset
+        self.rot = 0
 
     def __str__(self) -> str:
         return f"Piece<name: {self.name}, x: {self.x}, y: {self.y}>"
@@ -29,6 +30,9 @@ class Piece:
     def set_position(self, x, y):
         self.x = x
         self.y = y
+
+    def set_rotations(self, rot):
+        self.rot = rot
 
     def move_down(self):
         self.y += 1

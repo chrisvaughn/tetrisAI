@@ -1,6 +1,7 @@
 import copy
 from typing import Union
 
+import cv2
 import numpy as np
 
 from .board import Board
@@ -13,6 +14,39 @@ class GameState:
         self.current_piece = current_piece
         self.next_piece = next_piece
         self._last_piece: Union[Piece, None] = None
+
+    def display(self):
+        block_size = 28
+        virtual_board = np.zeros(
+            (Board.rows * block_size, Board.columns * block_size, 3), dtype=np.uint8
+        )
+        for y, cols in enumerate(self.board.board):
+            for x, cell in enumerate(cols):
+                cv2.rectangle(
+                    virtual_board,
+                    (x * block_size, y * block_size),
+                    ((x + 1) * block_size, (y + 1) * block_size),
+                    (255, 255, 255),
+                    cv2.FILLED if cell != 0 else None,
+                )
+        cp_shape = np.rot90(self.current_piece.shape, self.current_piece.rot)
+        for (y, x), value in np.ndenumerate(cp_shape):
+            if value != 0:
+                cv2.rectangle(
+                    virtual_board,
+                    (
+                        (self.current_piece.x + x) * block_size,
+                        (self.current_piece.y + y) * block_size,
+                    ),
+                    (
+                        (self.current_piece.x + x + 1) * block_size,
+                        (self.current_piece.y + y + 1) * block_size,
+                    ),
+                    (255, 0, 0),
+                    cv2.FILLED,
+                )
+
+        cv2.imshow("Virtual Board", virtual_board)
 
     def update(self, board: Board, current_piece: Piece, next_piece: Piece):
         self.board = board
