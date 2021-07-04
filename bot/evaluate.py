@@ -24,16 +24,21 @@ def scoring_v1(state: GameState, weights) -> Tuple[float, dict]:
 
 def execute_move(state: GameState, rot: int, trans: int):
     for _ in range(rot):
-        state.rotate_ccw()
+        state.rotate_cw()
+    actual_t = trans
     if trans < 0:
-        for _ in range(abs(trans)):
-            state.move_left()
+        for i in range(1, abs(trans) + 1):
+            if state.move_left():
+                actual_t = -i
     if trans > 0:
-        for _ in range(trans):
-            state.move_right()
+        for i in range(1, trans + 1):
+            if state.move_right():
+                actual_t = i
     while state.move_down_possible():
         state.move_down()
     state.move_down()
+
+    return actual_t
 
 
 @dataclass
@@ -48,10 +53,10 @@ class Move:
     def to_sequence(self) -> List[str]:
         seq = []
         if self.rotations == 3:
-            seq.append("rot_cw")
+            seq.append("rot_ccw")
         else:
             for i in range(self.rotations):
-                seq.append("rot_ccw")
+                seq.append("rot_cw")
         if self.translation < 0:
             for _ in range(abs(self.translation)):
                 seq.append("move_left")
@@ -75,11 +80,11 @@ class Evaluator:
         collect_final_state: bool = False,
     ) -> List[Move]:
         possible_moves: List[Move] = []
-        meaningful_rotations = initial_state.current_piece.valid_rotations + 1
-        for rot in range(meaningful_rotations):
+        meaningful_rotations = len(initial_state.current_piece.shapes)
+        for rot in range(meaningful_rotations + 1):
             for t in range(-5, 5):
                 state = initial_state.clone()
-                execute_move(state, rot, t)
+                actual_t = execute_move(state, rot, t)
 
                 if lookahead:
                     lookahead_state = state.clone()
@@ -90,10 +95,8 @@ class Evaluator:
                         len(lookahead_state.current_piece.shape[0]) / 2
                     )
                     lookahead_state.current_piece.set_position(x, 0)
-                    meaningful_rotations = (
-                        lookahead_state.current_piece.valid_rotations + 1
-                    )
-                    for rot2 in range(meaningful_rotations):
+                    meaningful_rotations = len(lookahead_state.current_piece.shapes)
+                    for rot2 in range(meaningful_rotations + 1):
                         for t2 in range(-5, 5):
                             execute_move(lookahead_state, rot2, t2)
                             score, parameters = scoring_v1(
@@ -119,7 +122,12 @@ class Evaluator:
                 else:
                     score, parameters = scoring_v1(state, self._weights)
                     move = Move(
-                        rot, t, score, parameters, None, parameters["values"]["lines"]
+                        rot,
+                        actual_t,
+                        score,
+                        parameters,
+                        None,
+                        parameters["values"]["lines"],
                     )
                     if collect_final_state:
                         move.final_state = state
@@ -151,7 +159,7 @@ class Evaluator:
         for i in range(random.randint(0, 3)):
             if self._initial_state.rot_ccw_possible():
                 self._initial_state.rotate_ccw()
-                sequence.append("rot_ccw")
+                sequence.append("rot_cw")
 
         left = random.random() > 0.5
         for i in range(random.randint(0, 5)):

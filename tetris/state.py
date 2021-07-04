@@ -9,7 +9,12 @@ from .pieces import Piece
 
 
 class GameState:
-    def __init__(self, board: Board, current_piece: Piece, next_piece: Piece):
+    def __init__(
+        self,
+        board: Board,
+        current_piece: Union[Piece, None],
+        next_piece: Union[Piece, None],
+    ):
         self.board = board
         self.current_piece = current_piece
         self.next_piece = next_piece
@@ -29,22 +34,37 @@ class GameState:
                     (255, 255, 255),
                     cv2.FILLED if cell != 0 else None,
                 )
-        cp_shape = np.rot90(self.current_piece.shape, self.current_piece.rot)
-        for (y, x), value in np.ndenumerate(cp_shape):
-            if value != 0:
-                cv2.rectangle(
-                    virtual_board,
-                    (
-                        (self.current_piece.x + x) * block_size,
-                        (self.current_piece.y + y) * block_size,
-                    ),
-                    (
-                        (self.current_piece.x + x + 1) * block_size,
-                        (self.current_piece.y + y + 1) * block_size,
-                    ),
-                    (255, 0, 0),
-                    cv2.FILLED,
-                )
+        if self.current_piece:
+            px, py = self.current_piece.zero_based_corner_xy
+            for (y, x), value in np.ndenumerate(self.current_piece.shape):
+                if value != 0:
+                    cv2.rectangle(
+                        virtual_board,
+                        (
+                            (px + x) * block_size,
+                            (py + y) * block_size,
+                        ),
+                        (
+                            (px + x + 1) * block_size,
+                            (py + y + 1) * block_size,
+                        ),
+                        (255, 0, 0),
+                        cv2.FILLED,
+                    )
+                else:
+                    cv2.rectangle(
+                        virtual_board,
+                        (
+                            (px + x) * block_size,
+                            (py + y) * block_size,
+                        ),
+                        (
+                            (px + x + 1) * block_size,
+                            (py + y + 1) * block_size,
+                        ),
+                        (0, 255, 0),
+                        cv2.FILLED if x == 0 and y == 0 else None,
+                    )
 
         cv2.imshow("Virtual Board", virtual_board)
 
@@ -68,14 +88,18 @@ class GameState:
         return copy.deepcopy(self)
 
     def new_piece(self) -> bool:
+        if self.current_piece:
+            _, cp_y = self.current_piece.zero_based_corner_xy
+        else:
+            cp_y = 0
+        if self._last_piece:
+            _, lp_y = self._last_piece.zero_based_corner_xy
+        else:
+            lp_y = 0
         return (
             self.current_piece
             and self._last_piece is None
-            or (
-                self.current_piece
-                and self._last_piece
-                and self.current_piece.y < self._last_piece.y
-            )
+            or (self.current_piece and self._last_piece and cp_y < lp_y)
         )
 
     def move_down(self):
@@ -90,73 +114,98 @@ class GameState:
     def move_left(self):
         if self.move_left_possible():
             self.current_piece.move_left()
+            return True
+        return False
 
-    def move_right(self):
+    def move_right(self) -> bool:
         if self.move_right_possible():
             self.current_piece.move_right()
+            return True
+        return False
 
-    def move_down_possible(self):
+    def move_down_possible(self) -> bool:
+        px, py = self.current_piece.zero_based_corner_xy
+        py = py + 1
         for (y, x), value in np.ndenumerate(self.current_piece.shape):
-            tx = self.current_piece.x
-            ty = self.current_piece.y + 1
-            if value != 0 and ty + y >= 0:
-                if ty + y >= self.board.rows or self.board.board[ty + y, tx + x] != 0:
-                    return False
-        return True
-
-    def move_left_possible(self):
-        for (y, x), value in np.ndenumerate(self.current_piece.shape):
-            tx = self.current_piece.x - 1
-            ty = self.current_piece.y
-            if value != 0 and ty + y >= 0:
-                if tx + x < 0 or self.board.board[ty + y, tx + x] != 0:
-                    return False
-        return True
-
-    def move_right_possible(self):
-        for (y, x), value in np.ndenumerate(self.current_piece.shape):
-            tx = self.current_piece.x + 1
-            ty = self.current_piece.y
-            if value != 0 and tx + x >= 0 and ty + y >= 0:
+            if value != 0 and py + y >= 0:
                 if (
-                    tx + x >= self.board.columns
-                    or self.board.board[ty + y, tx + x] != 0
+                    py + y >= self.board.rows
+                    or px + x >= self.board.columns
+                    or self.board.board[py + y, px + x] != 0
+                ):
+                    return False
+        return True
+
+    def move_left_possible(self) -> bool:
+        px, py = self.current_piece.zero_based_corner_xy
+        px = px - 1
+        for (y, x), value in np.ndenumerate(self.current_piece.shape):
+            if value != 0 and py + y >= 0:
+                if px + x < 0 or self.board.board[py + y, px + x] != 0:
+                    return False
+        return True
+
+    def move_right_possible(self) -> bool:
+        px, py = self.current_piece.zero_based_corner_xy
+        px = px + 1
+        for (y, x), value in np.ndenumerate(self.current_piece.shape):
+            if value != 0 and px + x >= 0 and py + y >= 0:
+                if (
+                    px + x >= self.board.columns
+                    or self.board.board[py + y, px + x] != 0
                 ):
                     return False
         return True
 
     def rot_ccw_possible(self):
-        return self.rot_possible(np.rot90(self.current_piece.shape))
+        p = self.current_piece.clone()
+        p.rotate_ccw()
+        return self.rot_possible(p.shape)
 
-    def rot_possible(self, shape):
+    def rot_cw_possible(self):
+        p = self.current_piece.clone()
+        p.rotate_cw()
+        return self.rot_possible(p.shape)
+
+    def rot_possible(self, shape) -> bool:
+        px, py = self.current_piece.zero_based_corner_xy
         for (y, x), value in np.ndenumerate(shape):
-            tx = self.current_piece.x
-            ty = self.current_piece.y
-            if value != 0 and ty + y >= 0:
+            if value != 0 and py + y >= 0:
                 if (
-                    ty + y >= self.board.rows
-                    or tx + x < 0
-                    or tx + x >= self.board.columns
-                    or self.board.board[ty + y, tx + x] != 0
+                    py + y >= self.board.rows
+                    or px + x < 0
+                    or px + x >= self.board.columns
+                    or self.board.board[py + y, px + x] != 0
                 ):
                     return False
         return True
 
-    def rotate_ccw(self):
+    def rotate_ccw(self) -> bool:
         if self.rot_ccw_possible():
             self.current_piece.rotate_ccw()
+            return True
+        return False
+
+    def rotate_cw(self):
+        if self.rot_cw_possible():
+            self.current_piece.rotate_cw()
+            return True
+        return False
 
     def place_piece_on_board(self):
+        px, py = self.current_piece.zero_based_corner_xy
         for (y, x), value in np.ndenumerate(self.current_piece.shape):
             if value != 0:
                 self.board.board[
-                    self.current_piece.y + y, self.current_piece.x + x
+                    py + y,
+                    px + x,
                 ] = value
         self.board.updated()
 
     def check_game_over(self):
+        _, py = self.current_piece.zero_based_corner_xy
         for (y, x), value in np.ndenumerate(self.current_piece.shape):
-            if value != 0 and self.current_piece.y + y < 0:
+            if value != 0 and py + y < 0:
                 return True
         return False
 

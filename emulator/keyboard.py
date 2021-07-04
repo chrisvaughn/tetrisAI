@@ -11,10 +11,10 @@ src = CGEventSourceCreate(kCGEventSourceStateHIDSystemState)
 
 
 def move_to_key(move):
-    if move == "rot_cw":
-        return 61
     if move == "rot_ccw":
         return 60
+    if move == "rot_cw":
+        return 61
     if move == "move_left":
         return 123
     if move == "move_right":

@@ -1,173 +1,317 @@
 import copy
-from typing import Union
+from typing import Union, List, Tuple
 
 import numpy as np
+from .board import Board
 
 
 class Piece:
-    def __init__(
-        self,
-        name: str,
-        shape: np.ndarray,
-        valid_rots: int,
-        x_offset: int,
-        y_offset: int,
-        detection_shape: Union[np.ndarray, None] = None,
-    ):
+    def __init__(self, name: str, shapes: List[np.ndarray], default_shape_idx: int):
         self.name = name
-        self.shape = shape
-        self.valid_rotations = valid_rots
-        self.detection_shape = detection_shape
-        self.x = 0
-        self.y = 0
-        self.x_offset = x_offset
-        self.y_offset = y_offset
-        self.rot = 0
+        self.shapes = shapes
+        self.default_shape_idx = default_shape_idx
+        self._x = 0  # the center of the shape matrix
+        self._y = 0  # the center of the shape matrix
+        self.current_shape_idx = default_shape_idx
+        self._detection_shapes = None
 
     def __str__(self) -> str:
-        return f"Piece<name: {self.name}, x: {self.x}, y: {self.y}>"
+        return f"Piece<name: {self.name}, x: {self._x}, y: {self._y}>"
 
-    def set_position(self, x, y):
-        self.x = x
-        self.y = y
+    @property
+    def shape(self) -> np.ndarray:
+        return self.shapes[self.current_shape_idx]
 
-    def set_rotations(self, rot):
-        self.rot = rot
+    @property
+    def corner_xy(self) -> Tuple[int, int]:
+        return self._x - 2, self._y - 2
+
+    @property
+    def zero_based_corner_xy(self) -> Tuple[int, int]:
+        return self._x - 2 - 1, self._y - 2 - 1
+
+    # 0-based, left most x, top most y, number of rotations of detection shape
+    def set_detected_position(self, x: int, y: int, shape_idx: int):
+        self.current_shape_idx = shape_idx
+        where = np.where(self.shape == 1)
+        self._x = x + 2 - np.amin(where[1]) + 1
+        self._y = y + 2 - np.amin(where[0]) + 1
+
+    # 1-based, center of piece
+    def set_position(self, x: int, y: int):
+        if x < 1 or x > Board.columns:
+            raise ValueError(f"x must be between 1 and {Board.columns}")
+        if y < 1 or y > Board.rows:
+            raise ValueError(f"y must be between 1 and {Board.rows}")
+        self._x = x
+        self._y = y
 
     def move_down(self):
-        self.y += 1
+        self._y += 1
 
     def move_left(self):
-        self.x -= 1
+        self._x -= 1
 
     def move_right(self):
-        self.x += 1
+        self._x += 1
 
     def rotate_ccw(self):
-        self.shape = np.rot90(self.shape)
+        self.current_shape_idx = (self.current_shape_idx - 1) % len(self.shapes)
+
+    def rotate_cw(self):
+        self.current_shape_idx = (self.current_shape_idx + 1) % len(self.shapes)
 
     def clone(self):
         return copy.deepcopy(self)
+
+    @property
+    def detection_shapes(self) -> List[np.ndarray]:
+        if self._detection_shapes:
+            return self._detection_shapes
+
+        ds = []
+        for s in self.shapes:
+            where = np.where(s == 1)
+            pruned = s[
+                np.amin(where[0]) : np.amax(where[0]) + 1,
+                np.amin(where[1]) : np.amax(where[1]) + 1,
+            ]
+            ds.append(pruned)
+        self._detection_shapes = ds
+        return self._detection_shapes
 
 
 Tetrominoes = [
     Piece(
         "i",
-        np.array(
-            [
-                [0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0],
-                [1, 1, 1, 1, 0],
-                [0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0],
-            ],
-            dtype=int,
-        ),
+        [
+            np.array(
+                [
+                    [0, 0, 1, 0, 0],
+                    [0, 0, 1, 0, 0],
+                    [0, 0, 1, 0, 0],
+                    [0, 0, 1, 0, 0],
+                    [0, 0, 0, 0, 0],
+                ],
+                dtype=int,
+            ),
+            np.array(
+                [
+                    [0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0],
+                    [1, 1, 1, 1, 0],
+                    [0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0],
+                ],
+                dtype=int,
+            ),
+        ],
         1,
-        0,
-        2,
-        np.array([[1, 1, 1, 1]], dtype=int),
     ),
     Piece(
         "l",
-        np.array(
-            [
-                [0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0],
-                [0, 2, 2, 2, 0],
-                [0, 2, 0, 0, 0],
-                [0, 0, 0, 0, 0],
-            ],
-            dtype=int,
-        ),
-        3,
+        [
+            np.array(
+                [
+                    [0, 0, 0, 0, 0],
+                    [0, 0, 1, 0, 0],
+                    [0, 0, 1, 0, 0],
+                    [0, 0, 1, 1, 0],
+                    [0, 0, 0, 0, 0],
+                ],
+                dtype=int,
+            ),
+            np.array(
+                [
+                    [0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0],
+                    [0, 1, 1, 1, 0],
+                    [0, 1, 0, 0, 0],
+                    [0, 0, 0, 0, 0],
+                ],
+                dtype=int,
+            ),
+            np.array(
+                [
+                    [0, 0, 0, 0, 0],
+                    [0, 1, 1, 0, 0],
+                    [0, 0, 1, 0, 0],
+                    [0, 0, 1, 0, 0],
+                    [0, 0, 0, 0, 0],
+                ],
+                dtype=int,
+            ),
+            np.array(
+                [
+                    [0, 0, 0, 0, 0],
+                    [0, 0, 0, 1, 0],
+                    [0, 1, 1, 1, 0],
+                    [0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0],
+                ],
+                dtype=int,
+            ),
+        ],
         1,
-        2,
-        np.array([[1, 1, 1], [1, 0, 0]], dtype=int),
     ),
     Piece(
         "j",
-        np.array(
-            [
-                [0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0],
-                [0, 3, 3, 3, 0],
-                [0, 0, 0, 3, 0],
-                [0, 0, 0, 0, 0],
-            ],
-            dtype=int,
-        ),
+        [
+            np.array(
+                [
+                    [0, 0, 0, 0, 0],
+                    [0, 0, 1, 0, 0],
+                    [0, 0, 1, 0, 0],
+                    [0, 1, 1, 0, 0],
+                    [0, 0, 0, 0, 0],
+                ],
+                dtype=int,
+            ),
+            np.array(
+                [
+                    [0, 0, 0, 0, 0],
+                    [0, 1, 0, 0, 0],
+                    [0, 1, 1, 1, 0],
+                    [0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0],
+                ],
+                dtype=int,
+            ),
+            np.array(
+                [
+                    [0, 0, 0, 0, 0],
+                    [0, 0, 1, 1, 0],
+                    [0, 0, 1, 0, 0],
+                    [0, 0, 1, 0, 0],
+                    [0, 0, 0, 0, 0],
+                ],
+                dtype=int,
+            ),
+            np.array(
+                [
+                    [0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0],
+                    [0, 1, 1, 1, 0],
+                    [0, 0, 0, 1, 0],
+                    [0, 0, 0, 0, 0],
+                ],
+                dtype=int,
+            ),
+        ],
         3,
-        1,
-        2,
-        np.array([[1, 1, 1], [0, 0, 1]], dtype=int),
     ),
     Piece(
         "o",
-        np.array(
-            [
-                [0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0],
-                [0, 4, 4, 0, 0],
-                [0, 4, 4, 0, 0],
-                [0, 0, 0, 0, 0],
-            ],
-            dtype=int,
-        ),
+        [
+            np.array(
+                [
+                    [0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0],
+                    [0, 1, 1, 0, 0],
+                    [0, 1, 1, 0, 0],
+                    [0, 0, 0, 0, 0],
+                ],
+                dtype=int,
+            )
+        ],
         0,
-        1,
-        2,
-        np.array([[1, 1], [1, 1]], dtype=int),
     ),
     Piece(
         "s",
-        np.array(
-            [
-                [0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0],
-                [0, 0, 5, 5, 0],
-                [0, 5, 5, 0, 0],
-                [0, 0, 0, 0, 0],
-            ],
-            dtype=int,
-        ),
-        3,
-        1,
-        2,
-        np.array([[0, 1, 1], [1, 1, 0]], dtype=int),
+        [
+            np.array(
+                [
+                    [0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0],
+                    [0, 0, 1, 1, 0],
+                    [0, 1, 1, 0, 0],
+                    [0, 0, 0, 0, 0],
+                ],
+                dtype=int,
+            ),
+            np.array(
+                [
+                    [0, 0, 0, 0, 0],
+                    [0, 0, 1, 0, 0],
+                    [0, 0, 1, 1, 0],
+                    [0, 0, 0, 1, 0],
+                    [0, 0, 0, 0, 0],
+                ],
+                dtype=int,
+            ),
+        ],
+        0,
     ),
     Piece(
         "t",
-        np.array(
-            [
-                [0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0],
-                [0, 6, 6, 6, 0],
-                [0, 0, 6, 0, 0],
-                [0, 0, 0, 0, 0],
-            ],
-            dtype=int,
-        ),
-        3,
-        1,
+        [
+            np.array(
+                [
+                    [0, 0, 0, 0, 0],
+                    [0, 0, 1, 0, 0],
+                    [0, 1, 1, 1, 0],
+                    [0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0],
+                ],
+                dtype=int,
+            ),
+            np.array(
+                [
+                    [0, 0, 0, 0, 0],
+                    [0, 0, 1, 0, 0],
+                    [0, 0, 1, 1, 0],
+                    [0, 0, 1, 0, 0],
+                    [0, 0, 0, 0, 0],
+                ],
+                dtype=int,
+            ),
+            np.array(
+                [
+                    [0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0],
+                    [0, 1, 1, 1, 0],
+                    [0, 0, 1, 0, 0],
+                    [0, 0, 0, 0, 0],
+                ],
+                dtype=int,
+            ),
+            np.array(
+                [
+                    [0, 0, 0, 0, 0],
+                    [0, 0, 1, 0, 0],
+                    [0, 1, 1, 0, 0],
+                    [0, 0, 1, 0, 0],
+                    [0, 0, 0, 0, 0],
+                ],
+                dtype=int,
+            ),
+        ],
         2,
-        np.array([[1, 1, 1], [0, 1, 0]], dtype=int),
     ),
     Piece(
         "z",
-        np.array(
-            [
-                [0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0],
-                [0, 7, 7, 0, 0],
-                [0, 0, 7, 7, 0],
-                [0, 0, 0, 0, 0],
-            ],
-            dtype=int,
-        ),
-        3,
-        1,
-        2,
-        np.array([[1, 1, 0], [0, 1, 1]], dtype=int),
+        [
+            np.array(
+                [
+                    [0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0],
+                    [0, 1, 1, 0, 0],
+                    [0, 0, 1, 1, 0],
+                    [0, 0, 0, 0, 0],
+                ],
+                dtype=int,
+            ),
+            np.array(
+                [
+                    [0, 0, 0, 0, 0],
+                    [0, 0, 0, 1, 0],
+                    [0, 0, 1, 1, 0],
+                    [0, 0, 1, 0, 0],
+                    [0, 0, 0, 0, 0],
+                ],
+                dtype=int,
+            ),
+        ],
+        0,
     ),
 ]

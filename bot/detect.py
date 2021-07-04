@@ -75,14 +75,10 @@ class Detectorist:
         if current_piece is None:
             return
         for piece in Tetrominoes:
-            for i in range(0, 4):
-                rp = np.rot90(current_piece, i)
-                if np.array_equal(rp, piece.detection_shape):
+            for i, s in enumerate(piece.detection_shapes):
+                if np.array_equal(current_piece, s):
                     self._current_piece = piece.clone()
-                    self._current_piece.set_position(
-                        at_x - piece.x_offset, at_y + piece.y_offset
-                    )
-                    self._current_piece.set_rotations(i)
+                    self._current_piece.set_detected_position(at_x, at_y, i)
                     return
 
     def _detect_next_piece(self):

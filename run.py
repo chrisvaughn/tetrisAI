@@ -49,6 +49,7 @@ def main(step=False, diff_states=False, all_moves=False):
         gs.display()
 
         if gs.new_piece() and not move_sequence:
+            print(gs.current_piece.zero_based_corner_xy)
             keyboard.send_event_off(emulator.pid, "move_down")
             drop_enabled = False
             move_count += 1
