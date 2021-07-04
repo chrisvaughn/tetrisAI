@@ -10,11 +10,11 @@ def test_i():
     x, y = piece.zero_based_corner_xy
     assert (x, y) == (zero_based[0], zero_based[1])
 
-    piece.rotate_cw()
+    piece.rot_cw()
     x, y = piece.zero_based_corner_xy
     assert (x, y) == (zero_based[0], zero_based[1])
 
-    piece.rotate_ccw()
+    piece.rot_ccw()
     x, y = piece.zero_based_corner_xy
     assert (x, y) == (zero_based[0], zero_based[1])
 
@@ -44,11 +44,11 @@ def test_l():
     x, y = piece.zero_based_corner_xy
     assert (x, y) == (zero_based[0], zero_based[1])
 
-    piece.rotate_cw()
+    piece.rot_cw()
     x, y = piece.zero_based_corner_xy
     assert (x, y) == (zero_based[0], zero_based[1])
 
-    piece.rotate_ccw()
+    piece.rot_ccw()
     x, y = piece.zero_based_corner_xy
     assert (x, y) == (zero_based[0], zero_based[1])
 
@@ -78,11 +78,11 @@ def test_j():
     x, y = piece.zero_based_corner_xy
     assert (x, y) == (zero_based[0], zero_based[1])
 
-    piece.rotate_cw()
+    piece.rot_cw()
     x, y = piece.zero_based_corner_xy
     assert (x, y) == (zero_based[0], zero_based[1])
 
-    piece.rotate_ccw()
+    piece.rot_ccw()
     x, y = piece.zero_based_corner_xy
     assert (x, y) == (zero_based[0], zero_based[1])
 

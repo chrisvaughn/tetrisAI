@@ -24,7 +24,7 @@ def scoring_v1(state: GameState, weights) -> Tuple[float, dict]:
 
 def execute_move(state: GameState, rot: int, trans: int):
     for _ in range(rot):
-        state.rotate_cw()
+        state.rot_cw()
     actual_t = trans
     if trans < 0:
         for i in range(1, abs(trans) + 1):
@@ -76,7 +76,6 @@ class Evaluator:
     def evaluate_all_moves(
         self,
         initial_state: GameState,
-        lookahead: bool = True,
         collect_final_state: bool = False,
     ) -> List[Move]:
         possible_moves: List[Move] = []
@@ -84,65 +83,27 @@ class Evaluator:
         for rot in range(meaningful_rotations + 1):
             for t in range(-5, 5):
                 state = initial_state.clone()
-                actual_t = execute_move(state, rot, t)
-
-                if lookahead:
-                    lookahead_state = state.clone()
-                    # move next_piece to current_piece and do it again
-                    next_piece_scores = []
-                    lookahead_state.current_piece = lookahead_state.next_piece
-                    x = math.floor(Board.columns / 2) - math.ceil(
-                        len(lookahead_state.current_piece.shape[0]) / 2
-                    )
-                    lookahead_state.current_piece.set_position(x, 0)
-                    meaningful_rotations = len(lookahead_state.current_piece.shapes)
-                    for rot2 in range(meaningful_rotations + 1):
-                        for t2 in range(-5, 5):
-                            execute_move(lookahead_state, rot2, t2)
-                            score, parameters = scoring_v1(
-                                lookahead_state, self._weights
-                            )
-                            move = Move(
-                                rot,
-                                t,
-                                score,
-                                parameters,
-                                None,
-                                lookahead_state.check_full_lines(),
-                            )
-                            if collect_final_state:
-                                move.final_state = state
-                            next_piece_scores.append(move)
-                    best_move_with_look_ahead = sorted(
-                        next_piece_scores,
-                        key=lambda x: x.score,
-                        reverse=True,
-                    )[0]
-                    possible_moves.append(best_move_with_look_ahead)
-                else:
-                    score, parameters = scoring_v1(state, self._weights)
-                    move = Move(
-                        rot,
-                        actual_t,
-                        score,
-                        parameters,
-                        None,
-                        parameters["values"]["lines"],
-                    )
-                    if collect_final_state:
-                        move.final_state = state
-                    possible_moves.append(move)
+                execute_move(state, rot, t)
+                score, parameters = scoring_v1(state, self._weights)
+                move = Move(
+                    rot,
+                    t,
+                    score,
+                    parameters,
+                    None,
+                    parameters["values"]["lines"],
+                )
+                if collect_final_state:
+                    move.final_state = state
+                possible_moves.append(move)
 
         return possible_moves
 
-    def best_move(
-        self, lookahead=True, collect_final_state=False, debug=False
-    ) -> Tuple[Move, float]:
+    def best_move(self, collect_final_state=False, debug=False) -> Tuple[Move, float]:
         start = time.time()
         all_moves = sorted(
             self.evaluate_all_moves(
                 self._initial_state,
-                lookahead=lookahead,
                 collect_final_state=collect_final_state,
             ),
             key=lambda x: (x.score, x.lines_completed),
@@ -158,7 +119,7 @@ class Evaluator:
         sequence: List[str] = []
         for i in range(random.randint(0, 3)):
             if self._initial_state.rot_ccw_possible():
-                self._initial_state.rotate_ccw()
+                self._initial_state.rot_ccw()
                 sequence.append("rot_cw")
 
         left = random.random() > 0.5

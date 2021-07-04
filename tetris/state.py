@@ -105,11 +105,10 @@ class GameState:
     def move_down(self):
         if self.move_down_possible():
             self.current_piece.move_down()
+            return True
         else:
-            if self.check_game_over():
-                return False
             self.place_piece_on_board()
-        return True
+            return False
 
     def move_left(self):
         if self.move_left_possible():
@@ -159,12 +158,12 @@ class GameState:
 
     def rot_ccw_possible(self):
         p = self.current_piece.clone()
-        p.rotate_ccw()
+        p.rot_ccw()
         return self.rot_possible(p.shape)
 
     def rot_cw_possible(self):
         p = self.current_piece.clone()
-        p.rotate_cw()
+        p.rot_cw()
         return self.rot_possible(p.shape)
 
     def rot_possible(self, shape) -> bool:
@@ -180,15 +179,15 @@ class GameState:
                     return False
         return True
 
-    def rotate_ccw(self) -> bool:
+    def rot_ccw(self) -> bool:
         if self.rot_ccw_possible():
-            self.current_piece.rotate_ccw()
+            self.current_piece.rot_ccw()
             return True
         return False
 
-    def rotate_cw(self):
+    def rot_cw(self):
         if self.rot_cw_possible():
-            self.current_piece.rotate_cw()
+            self.current_piece.rot_cw()
             return True
         return False
 

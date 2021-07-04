@@ -29,13 +29,13 @@ def main():
 
         print("Rotating CW")
         for i in range(len(t.shapes) + 1):
-            gs.rotate_cw()
+            gs.rot_cw()
             gs.display()
             cv2.waitKey(0)
 
         print("Rotating CCW")
         for i in range(len(t.shapes) + 1):
-            gs.rotate_ccw()
+            gs.rot_ccw()
             gs.display()
             cv2.waitKey(0)
 

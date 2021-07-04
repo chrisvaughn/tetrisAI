@@ -1,7 +1,8 @@
 import copy
-from typing import Union, List, Tuple
+from typing import List, Tuple, Union
 
 import numpy as np
+
 from .board import Board
 
 
@@ -55,10 +56,10 @@ class Piece:
     def move_right(self):
         self._x += 1
 
-    def rotate_ccw(self):
+    def rot_ccw(self):
         self.current_shape_idx = (self.current_shape_idx - 1) % len(self.shapes)
 
-    def rotate_cw(self):
+    def rot_cw(self):
         self.current_shape_idx = (self.current_shape_idx + 1) % len(self.shapes)
 
     def clone(self):

@@ -1,6 +1,4 @@
-import cv2
-
-from tetris import Board, Tetrominoes, GameState
+from tetris import Board, GameState, Tetrominoes
 
 
 def test_I():
@@ -37,5 +35,5 @@ def test_I():
     # reset in the middle
     cp.set_position(5, 10)
 
-    assert gs.rotate_cw()
-    assert gs.rotate_ccw()
+    assert gs.rot_cw()
+    assert gs.rot_ccw()
