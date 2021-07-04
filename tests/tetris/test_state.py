@@ -13,15 +13,15 @@ def test_I():
     assert gs.roughness() == 0
     assert gs.relative_height() == 0
 
-    # can move left 3
-    for i in range(3):
+    # can move left 2
+    for i in range(2):
         success = gs.move_left()
         assert success
 
     success = gs.move_left()
     assert not success
 
-    # can move right five times
+    # can move right 6 times
     for i in range(6):
         success = gs.move_right()
         assert success
@@ -37,5 +37,5 @@ def test_I():
     # reset in the middle
     cp.set_position(5, 10)
 
-    # assert gs.rotate_cw()
-    # assert gs.rotate_ccw()
+    assert gs.rotate_cw()
+    assert gs.rotate_ccw()
