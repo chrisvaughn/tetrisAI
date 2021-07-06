@@ -19,6 +19,7 @@ class GameState:
         self.current_piece = current_piece
         self.next_piece = next_piece
         self._last_piece: Union[Piece, None] = None
+        self._completed_lines: int = 0
 
     def display(self):
         block_size = 28
@@ -51,20 +52,23 @@ class GameState:
                         (255, 0, 0),
                         cv2.FILLED,
                     )
-                else:
-                    cv2.rectangle(
-                        virtual_board,
-                        (
-                            (px + x) * block_size,
-                            (py + y) * block_size,
-                        ),
-                        (
-                            (px + x + 1) * block_size,
-                            (py + y + 1) * block_size,
-                        ),
-                        (0, 255, 0),
-                        cv2.FILLED if x == 0 and y == 0 else None,
-                    )
+
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        org = (block_size * 2, block_size * 2)
+        fontScale = 1
+        color = (255, 255, 0)
+        thickness = 2
+
+        cv2.putText(
+            virtual_board,
+            str(self._completed_lines),
+            org,
+            font,
+            fontScale,
+            color,
+            thickness,
+            cv2.LINE_AA,
+        )
 
         cv2.imshow("Virtual Board", virtual_board)
 
@@ -215,6 +219,7 @@ class GameState:
             removed_lines.fill(0)
             clean_board = self.board.board[np.any(self.board.board == 0, 1)]
             self.board.board = np.vstack((removed_lines, clean_board))
+        self._completed_lines += full_lines
         return full_lines
 
     def count_holes(self) -> int:

@@ -25,20 +25,15 @@ def scoring_v1(state: GameState, weights) -> Tuple[float, dict]:
 def execute_move(state: GameState, rot: int, trans: int):
     for _ in range(rot):
         state.rot_cw()
-    actual_t = trans
     if trans < 0:
-        for i in range(1, abs(trans) + 1):
-            if state.move_left():
-                actual_t = -i
+        for _ in range(abs(trans)):
+            state.move_left()
     if trans > 0:
-        for i in range(1, trans + 1):
-            if state.move_right():
-                actual_t = i
+        for _ in range(trans):
+            state.move_right()
     while state.move_down_possible():
         state.move_down()
     state.move_down()
-
-    return actual_t
 
 
 @dataclass
@@ -80,8 +75,12 @@ class Evaluator:
     ) -> List[Move]:
         possible_moves: List[Move] = []
         meaningful_rotations = len(initial_state.current_piece.shapes)
-        for rot in range(meaningful_rotations + 1):
-            for t in range(-5, 5):
+        for rot in range(meaningful_rotations):
+            rotstate = initial_state.clone()
+            for _ in range(rot):
+                rotstate.rot_cw()
+            l, r = rotstate.current_piece.possible_translations()
+            for t in range(-l, r + 1):
                 state = initial_state.clone()
                 execute_move(state, rot, t)
                 score, parameters = scoring_v1(state, self._weights)
@@ -99,7 +98,9 @@ class Evaluator:
 
         return possible_moves
 
-    def best_move(self, collect_final_state=False, debug=False) -> Tuple[Move, float]:
+    def best_move(
+        self, collect_final_state=False, debug=False
+    ) -> Tuple[Move, float, int]:
         start = time.time()
         all_moves = sorted(
             self.evaluate_all_moves(
@@ -113,7 +114,7 @@ class Evaluator:
             print(all_moves)
         best_move = all_moves[0]
         end = time.time()
-        return best_move, end - start
+        return best_move, end - start, len(all_moves)
 
     def random_valid_move_sequence(self) -> List[str]:
         sequence: List[str] = []

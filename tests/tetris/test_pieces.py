@@ -1,7 +1,7 @@
 from tetris import Tetrominoes
 
-position = 5, 10
-zero_based = 2, 7
+position = 6, 10
+zero_based = 3, 7
 
 
 def test_i():
@@ -10,22 +10,33 @@ def test_i():
     x, y = piece.zero_based_corner_xy
     assert (x, y) == (zero_based[0], zero_based[1])
 
+    l, r = piece.possible_translations()
+    assert (l, r) == (3, 3)
+
     piece.rot_cw()
     x, y = piece.zero_based_corner_xy
     assert (x, y) == (zero_based[0], zero_based[1])
+    l, r = piece.possible_translations()
+    assert (l, r) == (5, 4)
 
     piece.rot_ccw()
     x, y = piece.zero_based_corner_xy
     assert (x, y) == (zero_based[0], zero_based[1])
+    l, r = piece.possible_translations()
+    assert (l, r) == (3, 3)
 
     piece.move_down()
     x, y = piece.zero_based_corner_xy
     assert (x, y) == (zero_based[0], zero_based[1] + 1)
+    l, r = piece.possible_translations()
+    assert (l, r) == (3, 3)
 
     piece.move_left()
     piece.move_left()
     x, y = piece.zero_based_corner_xy
     assert (x, y) == (zero_based[0] - 2, zero_based[1] + 1)
+    l, r = piece.possible_translations()
+    assert (l, r) == (1, 5)
 
     piece.set_detected_position(4, 5, 0)
     x, y = piece.zero_based_corner_xy
@@ -43,23 +54,33 @@ def test_l():
     piece.set_position(position[0], position[1])
     x, y = piece.zero_based_corner_xy
     assert (x, y) == (zero_based[0], zero_based[1])
+    l, r = piece.possible_translations()
+    assert (l, r) == (4, 3)
 
     piece.rot_cw()
     x, y = piece.zero_based_corner_xy
     assert (x, y) == (zero_based[0], zero_based[1])
+    l, r = piece.possible_translations()
+    assert (l, r) == (4, 4)
 
     piece.rot_ccw()
     x, y = piece.zero_based_corner_xy
     assert (x, y) == (zero_based[0], zero_based[1])
+    l, r = piece.possible_translations()
+    assert (l, r) == (4, 3)
 
     piece.move_down()
     x, y = piece.zero_based_corner_xy
     assert (x, y) == (zero_based[0], zero_based[1] + 1)
+    l, r = piece.possible_translations()
+    assert (l, r) == (4, 3)
 
     piece.move_left()
     piece.move_left()
     x, y = piece.zero_based_corner_xy
     assert (x, y) == (zero_based[0] - 2, zero_based[1] + 1)
+    l, r = piece.possible_translations()
+    assert (l, r) == (2, 5)
 
     piece.set_detected_position(4, 5, 0)
     x, y = piece.zero_based_corner_xy

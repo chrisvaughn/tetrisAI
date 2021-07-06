@@ -47,6 +47,14 @@ class Piece:
         self._x = x
         self._y = y
 
+    def possible_translations(self) -> Tuple[int, int]:
+        where = np.where(self.shape == 1)
+        min_x = np.amin(where[1])
+        max_x = np.amax(where[1])
+        t_left = self._x - (self.shape.shape[1] // 2 - min_x) - 1
+        t_right = 10 - self._x + (self.shape.shape[1] // 2 - max_x)
+        return t_left, t_right
+
     def move_down(self):
         self._y += 1
 
