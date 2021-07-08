@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import argparse
+import json
 import random
 import time
 
@@ -8,8 +9,38 @@ import cv2
 from bot import Evaluator
 from tetris import Board, GameState, Tetrominoes
 
+best_weights = {
+    "holes": -5,
+    "roughness": -0.6,
+    "lines": 5,
+    "relative_height": -0.7,
+    "absolute_height": -0.8,
+    "cumulative_height": -0.6,
+}
+
+
+def get_variations():
+    weights = {
+        "holes": -1,
+        "roughness": -1,
+        "lines": 1,
+        "relative_height": 1,
+        "absolute_height": 1,
+        "cumulative_height": 1,
+    }
+    for i in range(100):
+        weights = {k: v + i * 0.001 for k, v in weights.items()}
+        yield weights
+
 
 def main(args):
+    # a = get_variations()
+    # for i in a:
+    i = best_weights
+    run(args, i)
+
+
+def run(args, weights):
     seed = args.seed
     random.seed(seed)
     cp = random.choice(Tetrominoes)
@@ -22,21 +53,13 @@ def main(args):
     new_piece = True
     while not game_over:
         if args.display:
-            if cv2.waitKey(5) == ord("q"):
+            if cv2.waitKey(1) == ord("q"):
                 cv2.destroyAllWindows()
                 break
             gs.display()
         if new_piece:
             new_piece = False
             move_count += 1
-            weights = {
-                "holes": -5,
-                "roughness": -0.6,
-                "lines": 5,
-                "relative_height": -0.7,
-                "absolute_height": -0.8,
-                "cumulative_height": -0.5,
-            }
             aie = Evaluator(gs, weights)
             best_move, time_taken, moves_considered = aie.best_move(
                 collect_final_state=False, debug=False
@@ -58,10 +81,10 @@ def main(args):
             if not moved_down:
                 game_over = gs.check_game_over()
                 if game_over:
-                    print("Game Over")
                     print(f"Moves: {move_count}")
                     print(f"Lines: {lines}")
                     print(f"Seed: {seed}")
+                    print(f"Weights: {json.dumps(weights)}")
                 else:
                     lines += gs.check_full_lines()
                     cp = random.choice(Tetrominoes)

@@ -46,7 +46,7 @@ def main(step=False, diff_states=False, all_moves=False):
         else:
             # print("Updating GameState")
             gs.update(detector.board, detector.current_piece, detector.next_piece)
-        gs.display()
+        # gs.display()
 
         if gs.new_piece() and not move_sequence:
             print(gs.current_piece.zero_based_corner_xy)
@@ -59,15 +59,15 @@ def main(step=False, diff_states=False, all_moves=False):
                 "lines": 5,
                 "relative_height": -0.7,
                 "absolute_height": -0.8,
-                "cumulative_height": -0.5,
+                "cumulative_height": -0.6,
             }
             aie = Evaluator(gs, weights)
             if diff_states:
                 if not aie.compare_initial_to_expected(final_expected_state):
                     input("Press enter to continue.")
 
-            best_move, time_taken = aie.best_move(
-                lookahead=False, collect_final_state=diff_states, debug=all_moves
+            best_move, time_taken, moves_considered = aie.best_move(
+                collect_final_state=diff_states, debug=all_moves
             )
             if diff_states:
                 final_expected_state = best_move.final_state
@@ -77,7 +77,9 @@ def main(step=False, diff_states=False, all_moves=False):
                 execute_move(temp_state, best_move.rotations, best_move.translation)
                 temp_state.board.print()
             move_sequence = best_move.to_sequence()
-            print(f"Move {move_count} found in {int(time_taken*1000)} ms.")
+            print(
+                f"Move {move_count}: Piece: {gs.current_piece.name}, Considered {moves_considered} moves in {int(time_taken*1000)} ms."
+            )
             print(f"\tSequence: {move_sequence}")
             # print(f"\tScore: {best_move.score:.1f}")
             if best_move.lines_completed:
@@ -89,7 +91,7 @@ def main(step=False, diff_states=False, all_moves=False):
         if move_sequence:
             move = move_sequence.pop(0)
             keyboard.send_event(emulator.pid, move, hold)
-            drop_enabled = False
+            drop_enabled = True
         elif drop_enabled:
             keyboard.send_event_on(emulator.pid, "move_down")
 
