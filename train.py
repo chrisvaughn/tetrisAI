@@ -6,7 +6,7 @@ import time
 
 import cv2
 
-from bot import Evaluator
+from bot import Evaluator, get_pool
 from tetris import Board, GameState, Tetrominoes
 
 best_weights = {
@@ -15,7 +15,7 @@ best_weights = {
     "lines": 5,
     "relative_height": -0.7,
     "absolute_height": -0.8,
-    "cumulative_height": -0.6,
+    "cumulative_height": -0.5,
 }
 
 
@@ -41,6 +41,7 @@ def main(args):
 
 
 def run(args, weights):
+    get_pool()
     seed = args.seed
     random.seed(seed)
     cp = random.choice(Tetrominoes)
@@ -61,9 +62,7 @@ def run(args, weights):
             new_piece = False
             move_count += 1
             aie = Evaluator(gs, weights)
-            best_move, time_taken, moves_considered = aie.best_move(
-                collect_final_state=False, debug=False
-            )
+            best_move, time_taken, moves_considered = aie.best_move(debug=False)
             move_sequence = best_move.to_sequence()
             if args.stats:
                 print(

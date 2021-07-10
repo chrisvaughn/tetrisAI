@@ -4,21 +4,32 @@ import argparse
 
 import cv2
 
-from bot import Detectorist, Evaluator, execute_move
+from bot import Detectorist, Evaluator, execute_move, get_pool
 from emulator import capture, keyboard, manage
 from tetris import GameState
 
+weights = {
+    "holes": -5,
+    "roughness": -0.6,
+    "lines": 5,
+    "relative_height": -0.7,
+    "absolute_height": -0.8,
+    "cumulative_height": -0.5,
+}
 
-def main(step=False, diff_states=False, all_moves=False):
+
+def main(step=False, all_moves=False):
+    # init evaluation pool
+    get_pool()
     emulator = manage.launch()
 
     gs = None
     move_sequence = []
-    final_expected_state = None
     move_count = 0
     drop_enabled = False
     lines_completed = 0
     detector = None
+    aie = Evaluator(gs, weights)
     for screen in capture.screenshot_generator():
         hold = None
         if cv2.waitKey(25) == ord("q"):
@@ -44,33 +55,15 @@ def main(step=False, diff_states=False, all_moves=False):
             print("Building GameState")
             gs = GameState(detector.board, detector.current_piece, detector.next_piece)
         else:
-            # print("Updating GameState")
             gs.update(detector.board, detector.current_piece, detector.next_piece)
-        # gs.display()
 
         if gs.new_piece() and not move_sequence:
             print(gs.current_piece.zero_based_corner_xy)
             keyboard.send_event_off(emulator.pid, "move_down")
             drop_enabled = False
             move_count += 1
-            weights = {
-                "holes": -5,
-                "roughness": -0.6,
-                "lines": 5,
-                "relative_height": -0.7,
-                "absolute_height": -0.8,
-                "cumulative_height": -0.6,
-            }
-            aie = Evaluator(gs, weights)
-            if diff_states:
-                if not aie.compare_initial_to_expected(final_expected_state):
-                    input("Press enter to continue.")
-
-            best_move, time_taken, moves_considered = aie.best_move(
-                collect_final_state=diff_states, debug=all_moves
-            )
-            if diff_states:
-                final_expected_state = best_move.final_state
+            aie.update_state(gs)
+            best_move, time_taken, moves_considered = aie.best_move(debug=all_moves)
 
             if step:
                 temp_state = gs.clone()
@@ -108,10 +101,5 @@ if __name__ == "__main__":
         action="store_true",
         help="print all possible moves",
     )
-    parser.add_argument(
-        "--diff",
-        action="store_true",
-        help="diff expected and actual states between moves",
-    )
     args = parser.parse_args()
-    main(step=args.step, diff_states=args.diff, all_moves=args.all_moves)
+    main(step=args.step, all_moves=args.all_moves)
