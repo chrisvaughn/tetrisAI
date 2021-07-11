@@ -8,17 +8,35 @@ from bot import Detectorist, Evaluator, execute_move, get_pool
 from emulator import capture, keyboard, manage
 from tetris import GameState
 
+# weights = {
+#     "holes": -5,
+#     "roughness": -0.6,
+#     "lines": 5,
+#     "relative_height": -0.7,
+#     "absolute_height": -0.8,
+#     "cumulative_height": -0.5,
+# }
+
+# weights = {
+#     "holes": -0.5828434870040269,
+#     "roughness": -0.35241321375525203,
+#     "lines": 0.8371132866090609,
+#     "relative_height": 0.13594466169874808,
+#     "absolute_height": -0.2753119151051391,
+#     "cumulative_height": -1.48472415053232,
+# }
+
 weights = {
-    "holes": -5,
-    "roughness": -0.6,
-    "lines": 5,
-    "relative_height": -0.7,
-    "absolute_height": -0.8,
-    "cumulative_height": -0.5,
+    "holes": -1.7944608831611424,
+    "roughness": -0.6830591594362199,
+    "lines": 1.6440168684900818,
+    "relative_height": 0.5245349681257765,
+    "absolute_height": -0.6115639207004266,
+    "cumulative_height": -1.663000535691957,
 }
 
 
-def main(step=False, all_moves=False):
+def main(all_moves=False):
     # init evaluation pool
     get_pool()
     emulator = manage.launch()
@@ -65,10 +83,6 @@ def main(step=False, all_moves=False):
             aie.update_state(gs)
             best_move, time_taken, moves_considered = aie.best_move(debug=all_moves)
 
-            if step:
-                temp_state = gs.clone()
-                execute_move(temp_state, best_move.rotations, best_move.translation)
-                temp_state.board.print()
             move_sequence = best_move.to_sequence()
             print(
                 f"Move {move_count}: Piece: {gs.current_piece.name}, Considered {moves_considered} moves in {int(time_taken*1000)} ms."
@@ -77,9 +91,6 @@ def main(step=False, all_moves=False):
             # print(f"\tScore: {best_move.score:.1f}")
             if best_move.lines_completed:
                 lines_completed += best_move.lines_completed
-
-            if step:
-                input("Press enter to execute move.")
 
         if move_sequence:
             move = move_sequence.pop(0)
@@ -92,14 +103,9 @@ def main(step=False, all_moves=False):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="run tetris bot")
     parser.add_argument(
-        "--step",
-        action="store_true",
-        help="step through each move",
-    )
-    parser.add_argument(
         "--all_moves",
         action="store_true",
         help="print all possible moves",
     )
     args = parser.parse_args()
-    main(step=args.step, all_moves=args.all_moves)
+    main(all_moves=args.all_moves)

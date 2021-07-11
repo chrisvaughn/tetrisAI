@@ -6,7 +6,7 @@ import time
 
 import cv2
 
-from bot import Evaluator, get_pool
+from bot import GA, Evaluator, get_pool
 from tetris import Board, GameState, Tetrominoes
 
 best_weights = {
@@ -19,31 +19,23 @@ best_weights = {
 }
 
 
-def get_variations():
-    weights = {
-        "holes": -1,
-        "roughness": -1,
-        "lines": 1,
-        "relative_height": 1,
-        "absolute_height": 1,
-        "cumulative_height": 1,
-    }
-    for i in range(100):
-        weights = {k: v + i * 0.001 for k, v in weights.items()}
-        yield weights
-
-
 def main(args):
-    # a = get_variations()
-    # for i in a:
-    i = best_weights
-    run(args, i)
-
-
-def run(args, weights):
     get_pool()
-    seed = args.seed
-    random.seed(seed)
+    ga = GA(100, 10, avg_of)
+    best = ga.run()
+    print("All Done")
+    print(best)
+
+
+def avg_of(weights, num=10):
+    results = []
+    for i in range(num):
+        lines = evaluate(weights)
+        results.append(lines)
+    return sum(results) / len(results)
+
+
+def evaluate(weights: dict):
     cp = random.choice(Tetrominoes)
     cp.set_position(6, 1)
     gs = GameState(Board(), cp, None)
@@ -52,23 +44,24 @@ def run(args, weights):
     game_over = False
     lines = 0
     new_piece = True
+    aie = Evaluator(gs, weights)
     while not game_over:
-        if args.display:
-            if cv2.waitKey(1) == ord("q"):
-                cv2.destroyAllWindows()
-                break
-            gs.display()
+        # if args.display:
+        #     if cv2.waitKey(1) == ord("q"):
+        #         cv2.destroyAllWindows()
+        #         break
+        #     gs.display()
         if new_piece:
             new_piece = False
             move_count += 1
-            aie = Evaluator(gs, weights)
+            aie.update_state(gs)
             best_move, time_taken, moves_considered = aie.best_move(debug=False)
             move_sequence = best_move.to_sequence()
-            if args.stats:
-                print(
-                    f"Move {move_count}: Piece: {gs.current_piece.name}, Considered {moves_considered} moves in {int(time_taken*1000)} ms."
-                )
-                print(f"\tSequence: {move_sequence}")
+            # if args.stats:
+            #     print(
+            #         f"Move {move_count}: Piece: {gs.current_piece.name}, Considered {moves_considered} moves in {int(time_taken * 1000)} ms."
+            #     )
+            #     print(f"\tSequence: {move_sequence}")
         if move_sequence:
             move = move_sequence.pop(0)
             if move != "noop":
@@ -80,16 +73,18 @@ def run(args, weights):
             if not moved_down:
                 game_over = gs.check_game_over()
                 if game_over:
-                    print(f"Moves: {move_count}")
-                    print(f"Lines: {lines}")
-                    print(f"Seed: {seed}")
-                    print(f"Weights: {json.dumps(weights)}")
+                    pass
+                    # print(f"Moves: {move_count}")
+                    # print(f"Lines: {lines}")
+                    # print(f"Seed: {seed}")
+                    # print(f"Weights: {json.dumps(weights)}")
                 else:
                     lines += gs.check_full_lines()
                     cp = random.choice(Tetrominoes)
                     cp.set_position(5, 1)
                     gs.update(gs.board, cp, None)
                     new_piece = True
+    return lines
 
 
 if __name__ == "__main__":

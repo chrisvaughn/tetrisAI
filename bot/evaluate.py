@@ -104,6 +104,10 @@ class Evaluator:
         for m in imoves:
             possible_moves.append(m)
 
+        # for option in options:
+        #     move = self.execute_and_score(option)
+        #     possible_moves.append(move)
+
         return possible_moves
 
     def best_move(self, debug=False) -> Tuple[Move, float, int]:

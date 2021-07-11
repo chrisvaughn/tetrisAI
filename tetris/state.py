@@ -206,11 +206,7 @@ class GameState:
         self.board.updated()
 
     def check_game_over(self):
-        _, py = self.current_piece.zero_based_corner_xy
-        for (y, x), value in np.ndenumerate(self.current_piece.shape):
-            if value != 0 and py + y < 0:
-                return True
-        return False
+        return np.any(self.board.board[0] != 0)
 
     def check_full_lines(self) -> int:
         full_lines = np.count_nonzero(np.all(self.board.board != 0, 1))
