@@ -2,15 +2,13 @@ import random
 from dataclasses import dataclass
 from typing import Callable, List
 
+from .evaluate import Weights
+
 
 @dataclass
 class Genome:
-    holes: float = 0
-    roughness: float = 0
-    lines: float = 0
-    relative_height: float = 0
-    absolute_height: float = 0
-    cumulative_height: float = 0
+    weights: Weights = None
+    fitness: float = 0.0
 
 
 class GA:
@@ -32,12 +30,16 @@ class GA:
         genomes = []
         for i in range(self.population_size):
             genome = Genome(
-                holes=random.uniform(-2, 2),
-                roughness=random.uniform(-2, 2),
-                lines=random.uniform(-2, 2),
-                relative_height=random.uniform(-2, 2),
-                absolute_height=random.uniform(-2, 2),
-                cumulative_height=random.uniform(-2, 2),
+                weights=Weights(
+                    holes=random.uniform(-2, 2),
+                    roughness=random.uniform(-2, 2),
+                    lines=random.uniform(-2, 2),
+                    relative_height=random.uniform(-2, 2),
+                    absolute_height=random.uniform(-2, 2),
+                    cumulative_height=random.uniform(-2, 2),
+                    well_count=random.uniform(-2, 2),
+                ),
+                fitness=0.0,
             )
             genomes.append(genome)
 
@@ -45,28 +47,28 @@ class GA:
 
     def select_best(self, genomes: List[Genome]):
         best_performers = []
-        for i, genome in enumerate(genomes):
-            lines = self.fitness(genome.__dict__)
-            best_performers.append((i, lines))
-        best_performers = sorted(best_performers, key=lambda x: x[1], reverse=True)
-        return [(genomes[i], l) for i, l in best_performers[: self.select_best_n]]
+        for genome in genomes:
+            genome.fitness = self.fitness(genome.weights)
+            best_performers.append(genome)
+        best_performers = sorted(best_performers, key=lambda x: x.fitness, reverse=True)
+        return best_performers[: self.select_best_n]
 
-    def combine_and_mutate(self, parents):
+    def combine_and_mutate(self, parents: List[Genome]):
         children = []
         for i in range(self.population_size):
-            mom_or_dad = [random.choice(parents)[0], random.choice(parents)[0]]
-            child = Genome()
-            for field in child.__dict__.keys():
+            mom_or_dad = [random.choice(parents), random.choice(parents)]
+            child_weights = Weights()
+            for field in child_weights.__dict__.keys():
                 parent = random.choice(mom_or_dad)
-                value = getattr(parent, field)
+                value = getattr(parent.weights, field)
                 if random.random() < self.mutation_rate:
                     value = (
                         value
                         + random.random() * self.mutation_step * 2
                         - self.mutation_step
                     )
-                setattr(child, field, value)
-            children.append(child)
+                setattr(child_weights, field, value)
+            children.append(Genome(weights=child_weights))
         return children
 
     def run(self):
@@ -75,5 +77,5 @@ class GA:
             print(f"Generation: {gen}")
             best = self.select_best(genomes)
             genomes = self.combine_and_mutate(best)
-            print(best)
+            print(best[0])
         return self.select_best(genomes)[0]

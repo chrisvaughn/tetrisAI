@@ -40,6 +40,26 @@ def send_event(pid, move, hold=None):
     CGEventPostToPid(pid, event)
 
 
+def send_events(pid, moves, hold=None):
+    if hold is None:
+        hold = 0.025
+    for move in moves:
+        keycode = move_to_key(move)
+        if keycode is None:
+            continue
+        event = CGEventCreateKeyboardEvent(src, keycode, True)
+        CGEventPostToPid(pid, event)
+
+    time.sleep(hold)
+
+    for move in moves:
+        keycode = move_to_key(move)
+        if keycode is None:
+            continue
+        event = CGEventCreateKeyboardEvent(src, keycode, False)
+        CGEventPostToPid(pid, event)
+
+
 def send_event_on(pid, move):
     keycode = move_to_key(move)
     if keycode is None:

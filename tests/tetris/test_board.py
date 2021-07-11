@@ -23,3 +23,13 @@ def test_full_row():
     assert b.roughness() == 3
     assert b.relative_height() == 1
     assert not b.game_over()
+
+
+def test_well_count():
+    board = np.zeros((Board.rows, Board.columns), dtype=int)
+    board[10:, 1] = 1
+    board[15:, 3] = 1
+    board[15:, 4] = 1
+    board[13:, 6] = 1
+    b = Board(board)
+    assert b.well_count() == 3

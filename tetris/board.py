@@ -79,3 +79,22 @@ class Board:
 
     def game_over(self) -> bool:
         return self.board.all()
+
+    def well_count(self) -> int:
+        peaks = self._get_peaks()
+        well_count = 0
+        for i in range(len(peaks) - 1):
+            if i == 0:
+                left = 0
+            else:
+                left = peaks[i - 1]
+
+            center = peaks[i]
+
+            if i < 9:
+                right = peaks[i + 1]
+            else:
+                right = 0
+            if left - center <= -3 and right - center <= -3:
+                well_count += 1
+        return well_count
