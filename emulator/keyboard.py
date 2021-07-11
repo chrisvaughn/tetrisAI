@@ -1,10 +1,10 @@
 import time
 
 from Quartz import (
-    CGEventSourceCreate,
-    kCGEventSourceStateHIDSystemState,
     CGEventCreateKeyboardEvent,
     CGEventPostToPid,
+    CGEventSourceCreate,
+    kCGEventSourceStateHIDSystemState,
 )
 
 src = CGEventSourceCreate(kCGEventSourceStateHIDSystemState)
@@ -32,7 +32,7 @@ def send_event(pid, move, hold=None):
     if keycode is None:
         return
     if hold is None:
-        hold = 0.03
+        hold = 0.025
     event = CGEventCreateKeyboardEvent(src, keycode, True)
     CGEventPostToPid(pid, event)
     time.sleep(hold)
