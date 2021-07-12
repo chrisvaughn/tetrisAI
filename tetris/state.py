@@ -29,6 +29,7 @@ class GameState:
         self._last_piece: Union[Piece, None] = None
         self._completed_lines: int = 0
         self._last_rn: int = seed
+        self._look_for_new_piece: bool = True
 
     def select_next_piece(self) -> Piece:
         value = nes_prng(self._last_rn)
@@ -94,6 +95,9 @@ class GameState:
         if current_piece is not None:
             self.current_piece = current_piece
         self.next_piece = next_piece
+        _, y = self.current_piece.zero_based_corner_xy
+        if y > 0:
+            self._look_for_new_piece = True
 
     def diff_state(self, other_state: "GameState") -> bool:
         other_state.board.board[other_state.board.board > 1] = 1
@@ -108,19 +112,12 @@ class GameState:
         return copy.deepcopy(self)
 
     def new_piece(self) -> bool:
-        if self.current_piece:
-            _, cp_y = self.current_piece.zero_based_corner_xy
-        else:
-            cp_y = 0
-        if self._last_piece:
-            _, lp_y = self._last_piece.zero_based_corner_xy
-        else:
-            lp_y = 0
-        return (
-            self.current_piece
-            and self._last_piece is None
-            or (self.current_piece and self._last_piece and cp_y < lp_y)
-        )
+        if self._look_for_new_piece and self.current_piece:
+            _, y = self.current_piece.zero_based_corner_xy
+            if y < 1:
+                self._look_for_new_piece = False
+                return True
+        return False
 
     def move_down(self):
         if self.move_down_possible():
