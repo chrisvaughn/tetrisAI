@@ -7,20 +7,20 @@ from bot import GA, Evaluator, Weights, get_pool
 from tetris import Board, GameState, Tetrominoes
 
 best_weights = Weights(
-    holes= -5,
-    roughness= -0.6,
-    lines= 5,
-    relative_height= -0.7,
-    absolute_height= -0.8,
-    cumulative_height= -0.5,
-    well_count= 0,
+    holes=-5,
+    roughness=-0.6,
+    lines=5,
+    relative_height=-0.7,
+    absolute_height=-0.8,
+    cumulative_height=-0.5,
+    well_count=0,
 )
 
 
 def main(args):
     get_pool()
-    ga = GA(50, 5, avg_of)
-    best = ga.run()
+    ga = GA(100, 15, avg_of)
+    best = ga.run(resume=True)
     print("All Done")
     print(best)
 

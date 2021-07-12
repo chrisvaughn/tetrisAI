@@ -1,57 +1,38 @@
 #!/usr/bin/env python
 
 import argparse
+import os
+import pickle
 import random
 import time
 
 import cv2
 
-from bot import Detectorist, Evaluator, Weights, get_pool
+from bot import Detectorist, Evaluator, defined_weights, get_pool
 from emulator import capture, keyboard, manage
 from tetris import Board, GameState, Tetrominoes
 
-# weights = {
-#     "holes": -5,
-#     "roughness": -0.6,
-#     "lines": 5,
-#     "relative_height": -0.7,
-#     "absolute_height": -0.8,
-#     "cumulative_height": -0.5,
-#     "well_count": 0
-# }
 
-# weights = {
-#     "holes": -0.5828434870040269,
-#     "roughness": -0.35241321375525203,
-#     "lines": 0.8371132866090609,
-#     "relative_height": 0.13594466169874808,
-#     "absolute_height": -0.2753119151051391,
-#     "cumulative_height": -1.48472415053232,
-#     "well_count": 0
-# }
-
-weights = Weights(
-    holes=-1.7944608831611424,
-    roughness=-0.6830591594362199,
-    lines=1.6440168684900818,
-    relative_height=0.5245349681257765,
-    absolute_height=-0.6115639207004266,
-    cumulative_height=-1.663000535691957,
-    well_count=0,
-)
+def get_weights(use_save=True):
+    if use_save and os.path.isfile("save.pkl"):
+        with open("save.pkl", "rb") as f:
+            saved = pickle.load(f)
+            return saved.genomes[0].weights
+    return defined_weights.best
 
 
 def main(args):
     # init evaluation pool
     get_pool()
-
+    weights = get_weights(args.saved)
+    print(f"{weights}")
     if args.emulator:
-        run_with_emulator(args)
+        run_with_emulator(args, weights)
     else:
-        run_in_memory(args)
+        run_in_memory(args, weights)
 
 
-def run_in_memory(args):
+def run_in_memory(args, weights):
     seed = args.seed
     random.seed(seed)
     cp = random.choice(Tetrominoes)
@@ -102,7 +83,7 @@ def run_in_memory(args):
                     new_piece = True
 
 
-def run_with_emulator(args):
+def run_with_emulator(args, weights):
 
     emulator = manage.launch()
 
@@ -167,7 +148,15 @@ if __name__ == "__main__":
         "--stats", action="store_true", default=False, help="print move stats display"
     )
     parser.add_argument(
-        "--seed", default=str(int(time.time() * 100000)), help="rng seed for non-emulator"
+        "--seed",
+        default=str(int(time.time() * 100000)),
+        help="rng seed for non-emulator",
+    )
+    parser.add_argument(
+        "--saved",
+        action="store_true",
+        default=False,
+        help="use weights from save file if present",
     )
     args = parser.parse_args()
     main(args)

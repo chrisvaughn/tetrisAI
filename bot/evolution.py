@@ -1,3 +1,5 @@
+import os
+import pickle
 import random
 from dataclasses import dataclass
 from typing import Callable, List
@@ -11,16 +13,24 @@ class Genome:
     fitness: float = 0.0
 
 
+@dataclass
+class SaveState:
+    genomes: List[Genome]
+    current_generation: int
+
+
 class GA:
     def __init__(
         self,
         population_size: int,
         generations: int,
         fitness: Callable,
+        save_file: str = "save.pkl",
     ):
         self.population_size = population_size
         self.generations = generations
         self.fitness = fitness
+        self.save_file = save_file
 
         self.select_best_n = 20
         self.mutation_rate = 0.05
@@ -71,11 +81,21 @@ class GA:
             children.append(Genome(weights=child_weights))
         return children
 
-    def run(self):
-        genomes = self.create_initial()
-        for gen in range(self.generations):
+    def run(self, resume: bool = False):
+        if resume and os.path.isfile(self.save_file):
+            with open(self.save_file, "rb") as f:
+                save = pickle.load(f)
+            genomes = save.genomes
+            current = save.current_generation
+        else:
+            genomes = self.create_initial()
+            current = 0
+        for gen in range(current, self.generations):
             print(f"Generation: {gen}")
             best = self.select_best(genomes)
             genomes = self.combine_and_mutate(best)
             print(best[0])
+            with open(self.save_file, "wb") as f:
+                pickle.dump(SaveState(genomes, gen + 1), f)
+
         return self.select_best(genomes)[0]
