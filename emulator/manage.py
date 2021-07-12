@@ -28,8 +28,7 @@ def launch():
         if max_val > 0.4:
             break
     print("Starting the Game")
-    keyboard.send_event(process.pid, "return")
-    time.sleep(5)
+    keyboard.send_event(process.pid, "return", hold=0.5)
 
     print("Selecting Level 9")
     seq = [
@@ -43,9 +42,8 @@ def launch():
         "return",
     ]
     for cmd in seq:
-        keyboard.send_event(process.pid, cmd)
-        time.sleep(1)
-
+        keyboard.send_event(process.pid, cmd, hold=0.5)
+        time.sleep(0.3)
     return process
 
 

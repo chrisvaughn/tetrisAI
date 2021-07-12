@@ -3,14 +3,13 @@
 import argparse
 import os
 import pickle
-import random
 import time
 
 import cv2
 
 from bot import Detectorist, Evaluator, defined_weights, get_pool
 from emulator import capture, keyboard, manage
-from tetris import Board, GameState, Tetrominoes
+from tetris import Board, GameState
 
 
 def get_weights(use_save=True):
@@ -34,10 +33,9 @@ def main(args):
 
 def run_in_memory(args, weights):
     seed = args.seed
-    random.seed(seed)
-    cp = random.choice(Tetrominoes)
-    cp.set_position(6, 1)
-    gs = GameState(Board(), cp, None)
+    gs = GameState(Board(), None, None, seed)
+    cp = gs.select_next_piece()
+    gs.update(gs.board, cp, None)
     move_count = 0
     move_sequence = []
     game_over = False
@@ -66,7 +64,7 @@ def run_in_memory(args, weights):
                 if move != "noop":
                     getattr(gs, move)()
             gs.move_down()
-            gs.update(gs.board, gs.current_piece, None)
+            gs.update(gs.board, gs.current_piece)
         else:
             moved_down = gs.move_down()
             if not moved_down:
@@ -77,9 +75,8 @@ def run_in_memory(args, weights):
                     print(f"Seed: {seed}")
                 else:
                     lines += gs.check_full_lines()
-                    cp = random.choice(Tetrominoes)
-                    cp.set_position(5, 1)
-                    gs.update(gs.board, cp, None)
+                    cp = gs.select_next_piece()
+                    gs.update(gs.board, cp)
                     new_piece = True
 
 
@@ -111,7 +108,7 @@ def run_with_emulator(args, weights):
 
         if not gs:
             print("Building GameState")
-            gs = GameState(detector.board, detector.current_piece, detector.next_piece)
+            gs = GameState(detector.board, detector.current_piece, detector.next_piece, 0)
         else:
             gs.update(detector.board, detector.current_piece, detector.next_piece)
 
@@ -149,7 +146,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--seed",
-        default=str(int(time.time() * 100000)),
+        default=int(time.time() * 100000),
         help="rng seed for non-emulator",
     )
     parser.add_argument(

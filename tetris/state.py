@@ -5,7 +5,14 @@ import cv2
 import numpy as np
 
 from .board import Board
-from .pieces import Piece
+from .pieces import Piece, Tetrominoes
+
+
+def nes_prng(value: int):
+    bit1 = (value >> 1) & 1
+    bit9 = (value >> 9) & 1
+    lmb = bit1 ^ bit9
+    return (lmb << 15) | (value >> 1)
 
 
 class GameState:
@@ -13,13 +20,22 @@ class GameState:
         self,
         board: Board,
         current_piece: Union[Piece, None],
-        next_piece: Union[Piece, None],
+        next_piece: Union[Piece, None] = None,
+        seed: int = 0
     ):
         self.board = board
         self.current_piece = current_piece
         self.next_piece = next_piece
         self._last_piece: Union[Piece, None] = None
         self._completed_lines: int = 0
+        self._last_rn: int = seed
+
+    def select_next_piece(self) -> Piece:
+        value = nes_prng(self._last_rn)
+        self._last_rn = value
+        p = Tetrominoes[value % len(Tetrominoes)]
+        p.set_position(6, 1)
+        return p
 
     def display(self):
         block_size = 28
@@ -72,7 +88,7 @@ class GameState:
 
         cv2.imshow("Virtual Board", virtual_board)
 
-    def update(self, board: Board, current_piece: Piece, next_piece: Piece):
+    def update(self, board: Board, current_piece: Piece, next_piece: Piece=None):
         self.board = board
         self._last_piece = self.current_piece
         if current_piece is not None:
