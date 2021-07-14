@@ -40,15 +40,13 @@ def run_in_memory(args, weights):
     move_sequence = []
     game_over = False
     lines = 0
-    new_piece = True
     aie = Evaluator(gs, weights)
     while not game_over:
         if cv2.waitKey(1) == ord("q"):
             cv2.destroyAllWindows()
             break
         gs.display()
-        if new_piece:
-            new_piece = False
+        if gs.new_piece() and not move_sequence:
             move_count += 1
             aie.update_state(gs)
             best_move, time_taken, moves_considered = aie.best_move(debug=False)
@@ -67,6 +65,7 @@ def run_in_memory(args, weights):
             gs.update(gs.board, gs.current_piece)
         else:
             moved_down = gs.move_down()
+            gs.update(gs.board, cp)
             if not moved_down:
                 game_over = gs.check_game_over()
                 if game_over:
@@ -77,7 +76,6 @@ def run_in_memory(args, weights):
                     lines += gs.check_full_lines()
                     cp = gs.select_next_piece()
                     gs.update(gs.board, cp)
-                    new_piece = True
 
 
 def run_with_emulator(args, weights):
@@ -108,7 +106,9 @@ def run_with_emulator(args, weights):
 
         if not gs:
             print("Building GameState")
-            gs = GameState(detector.board, detector.current_piece, detector.next_piece, 0)
+            gs = GameState(
+                detector.board, detector.current_piece, detector.next_piece, 0
+            )
         else:
             gs.update(detector.board, detector.current_piece, detector.next_piece)
 

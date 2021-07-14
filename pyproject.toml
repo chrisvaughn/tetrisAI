@@ -11,6 +11,7 @@ opencv-python = "^4.5.2"
 pyobjc-framework-Quartz = "^7.2"
 mss = "^6.1.0"
 pytesseract = "^0.3.7"
+progressbar = "^2.5"
 
 [tool.poetry.dev-dependencies]
 black = "^21.5b2"

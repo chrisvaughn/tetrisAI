@@ -30,20 +30,21 @@ def launch():
     print("Starting the Game")
     keyboard.send_event(process.pid, "return", hold=0.5)
 
-    print("Selecting Level 9")
-    seq = [
-        "return",
-        "return",
-        "move_down",
-        "move_right",
-        "move_right",
-        "move_right",
-        "move_right",
-        "return",
-    ]
+    print("Selecting Level 10")
+    seq = ["return", "return"]
     for cmd in seq:
         keyboard.send_event(process.pid, cmd, hold=0.5)
-        time.sleep(0.3)
+        time.sleep(0.2)
+
+    keyboard.send_event_on(process.pid, "rot_cw")
+    time.sleep(0.03)
+    keyboard.send_event_on(process.pid, "return")
+    time.sleep(0.03)
+    keyboard.send_event_off(process.pid, "return")
+    keyboard.send_event_off(process.pid, "rot_cw")
+
+    time.sleep(0.5)
+
     return process
 
 

@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 import argparse
-import random
 import time
 
+import cv2
+
 from bot import GA, Evaluator, Weights, get_pool
-from tetris import Board, GameState, Tetrominoes
+from tetris import Board, GameState
 
 best_weights = Weights(
     holes=-5,
@@ -34,18 +35,20 @@ def avg_of(weights, num=10):
 
 
 def evaluate(weights: Weights):
-    cp = random.choice(Tetrominoes)
-    cp.set_position(6, 1)
-    gs = GameState(Board(), cp, None)
+    gs = GameState(Board(), None, seed=time.time_ns())
+    cp = gs.select_next_piece()
+    gs.update(gs.board, cp)
     move_count = 0
     move_sequence = []
     game_over = False
     lines = 0
-    new_piece = True
     aie = Evaluator(gs, weights)
     while not game_over:
-        if new_piece:
-            new_piece = False
+        # if cv2.waitKey(1) == ord("q"):
+        #     cv2.destroyAllWindows()
+        #     break
+        # gs.display()
+        if gs.new_piece() and not move_sequence:
             move_count += 1
             aie.update_state(gs)
             best_move, time_taken, moves_considered = aie.best_move(debug=False)
@@ -57,17 +60,16 @@ def evaluate(weights: Weights):
                 if move != "noop":
                     getattr(gs, move)()
             gs.move_down()
-            gs.update(gs.board, gs.current_piece, None)
+            gs.update(gs.board, gs.current_piece)
         else:
             moved_down = gs.move_down()
+            gs.update(gs.board, cp)
             if not moved_down:
                 game_over = gs.check_game_over()
                 if not game_over:
                     lines += gs.check_full_lines()
-                    cp = random.choice(Tetrominoes)
-                    cp.set_position(5, 1)
-                    gs.update(gs.board, cp, None)
-                    new_piece = True
+                    cp = gs.select_next_piece()
+                    gs.update(gs.board, cp)
     return lines
 
 

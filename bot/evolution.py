@@ -4,6 +4,8 @@ import random
 from dataclasses import dataclass
 from typing import Callable, List
 
+from progressbar import ETA, Bar, Percentage, ProgressBar
+
 from .evaluate import Weights
 
 
@@ -55,11 +57,20 @@ class GA:
 
         return genomes
 
-    def select_best(self, genomes: List[Genome]):
+    def select_best(self, genomes: List[Genome], progress=True):
+        pbar = None
+        if progress:
+            pbar = ProgressBar(
+                widgets=[Percentage(), Bar(), ETA()], maxval=len(genomes)
+            ).start()
         best_performers = []
-        for genome in genomes:
+        for i, genome in enumerate(genomes):
             genome.fitness = self.fitness(genome.weights)
             best_performers.append(genome)
+            if pbar:
+                pbar.update(i + 1)
+        if pbar:
+            pbar.finish()
         best_performers = sorted(best_performers, key=lambda x: x.fitness, reverse=True)
         return best_performers[: self.select_best_n]
 

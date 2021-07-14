@@ -1,4 +1,5 @@
 import copy
+import time
 from typing import Union
 
 import cv2
@@ -21,7 +22,7 @@ class GameState:
         board: Board,
         current_piece: Union[Piece, None],
         next_piece: Union[Piece, None] = None,
-        seed: int = 0
+        seed: int = 0,
     ):
         self.board = board
         self.current_piece = current_piece
@@ -89,15 +90,15 @@ class GameState:
 
         cv2.imshow("Virtual Board", virtual_board)
 
-    def update(self, board: Board, current_piece: Piece, next_piece: Piece=None):
+    def update(self, board: Board, current_piece: Piece, next_piece: Piece = None):
         self.board = board
         self._last_piece = self.current_piece
         if current_piece is not None:
             self.current_piece = current_piece
+            _, y = self.current_piece.zero_based_corner_xy
+            if y > 0:
+                self._look_for_new_piece = True
         self.next_piece = next_piece
-        _, y = self.current_piece.zero_based_corner_xy
-        if y > 0:
-            self._look_for_new_piece = True
 
     def diff_state(self, other_state: "GameState") -> bool:
         other_state.board.board[other_state.board.board > 1] = 1

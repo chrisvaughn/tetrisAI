@@ -32,7 +32,7 @@ def send_event(pid, move, hold=None):
     if keycode is None:
         return
     if hold is None:
-        hold = 0.025
+        hold = 0.03
     event = CGEventCreateKeyboardEvent(src, keycode, True)
     CGEventPostToPid(pid, event)
     time.sleep(hold)
@@ -42,18 +42,19 @@ def send_event(pid, move, hold=None):
 
 def send_events(pid, moves, hold=None):
     if hold is None:
-        hold = 0.025
-    for move in moves:
-        keycode = move_to_key(move)
+        hold = 0.03
+    keycodes = [move_to_key(move) for move in moves]
+
+    for keycode in keycodes:
         if keycode is None:
             continue
         event = CGEventCreateKeyboardEvent(src, keycode, True)
         CGEventPostToPid(pid, event)
+        time.sleep(0.001)
 
     time.sleep(hold)
 
-    for move in moves:
-        keycode = move_to_key(move)
+    for keycode in reversed(keycodes):
         if keycode is None:
             continue
         event = CGEventCreateKeyboardEvent(src, keycode, False)
