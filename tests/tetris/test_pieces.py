@@ -48,6 +48,21 @@ def test_i():
     assert x == 5
     assert y == 8
 
+    piece.move_left(2)
+    x, y = piece.zero_based_corner_xy
+    assert x == 3
+    assert y == 8
+
+    piece.move_right(2)
+    x, y = piece.zero_based_corner_xy
+    assert x == 5
+    assert y == 8
+
+    piece.move_down(2)
+    x, y = piece.zero_based_corner_xy
+    assert x == 5
+    assert y == 10
+
 
 def test_l():
     piece = Tetrominoes[1]
@@ -92,6 +107,21 @@ def test_l():
     assert x == 4
     assert y == 8
 
+    piece.move_left(2)
+    x, y = piece.zero_based_corner_xy
+    assert x == 2
+    assert y == 8
+
+    piece.move_right(2)
+    x, y = piece.zero_based_corner_xy
+    assert x == 4
+    assert y == 8
+
+    piece.move_down(2)
+    x, y = piece.zero_based_corner_xy
+    assert x == 4
+    assert y == 10
+
 
 def test_j():
     piece = Tetrominoes[2]
@@ -125,3 +155,18 @@ def test_j():
     x, y = piece.zero_based_corner_xy
     assert x == 4
     assert y == 9
+
+    piece.move_left(2)
+    x, y = piece.zero_based_corner_xy
+    assert x == 2
+    assert y == 9
+
+    piece.move_right(2)
+    x, y = piece.zero_based_corner_xy
+    assert x == 4
+    assert y == 9
+
+    piece.move_down(2)
+    x, y = piece.zero_based_corner_xy
+    assert x == 4
+    assert y == 11

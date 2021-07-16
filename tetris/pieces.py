@@ -55,20 +55,20 @@ class Piece:
         t_right = 10 - self._x + (self.shape.shape[1] // 2 - max_x)
         return t_left, t_right
 
-    def move_down(self):
-        self._y += 1
+    def move_down(self, moves: int = 1):
+        self._y += moves
 
-    def move_left(self):
-        self._x -= 1
+    def move_left(self, moves: int = 1):
+        self._x -= moves
 
-    def move_right(self):
-        self._x += 1
+    def move_right(self, moves: int = 1):
+        self._x += moves
 
-    def rot_ccw(self):
-        self.current_shape_idx = (self.current_shape_idx - 1) % len(self.shapes)
+    def rot_ccw(self, rot: int = 1):
+        self.current_shape_idx = (self.current_shape_idx - rot) % len(self.shapes)
 
-    def rot_cw(self):
-        self.current_shape_idx = (self.current_shape_idx + 1) % len(self.shapes)
+    def rot_cw(self, rot: int = 1):
+        self.current_shape_idx = (self.current_shape_idx + rot) % len(self.shapes)
 
     def clone(self):
         return copy.deepcopy(self)

@@ -50,14 +50,18 @@ class Move:
 
 
 def execute_move(state: GameState, rot: int, trans: int):
-    for _ in range(rot):
-        state.rot_cw()
+    state.rot_cw(rot)
     if trans < 0:
-        for _ in range(abs(trans)):
-            state.move_left()
+        state.move_left(abs(trans))
     if trans > 0:
-        for _ in range(trans):
-            state.move_right()
+        state.move_right(trans)
+    # move down as much as possible in one go
+    _, y = state.current_piece.zero_based_corner_xy
+    y = y + state.current_piece.shape.shape[0]
+    moves = state.board.rows - y - state.absolute_height() - 1
+    if moves > 0:
+        state.move_down(moves)
+    # move one space at a time to check for collisions
     while state.move_down_possible():
         state.move_down()
     state.move_down()
@@ -116,7 +120,6 @@ class Evaluator:
                 options.append((rot, t))
 
         imoves = get_pool().imap_unordered(self.execute_and_score, options)
-
         for m in imoves:
             possible_moves.append(m)
 

@@ -100,15 +100,6 @@ class GameState:
                 self._look_for_new_piece = True
         self.next_piece = next_piece
 
-    def diff_state(self, other_state: "GameState") -> bool:
-        other_state.board.board[other_state.board.board > 1] = 1
-        if np.array_equal(self.board.board, other_state.board.board):
-            print("States did match")
-            return True
-        else:
-            print("States do not match")
-            return False
-
     def clone(self):
         return copy.deepcopy(self)
 
@@ -120,29 +111,30 @@ class GameState:
                 return True
         return False
 
-    def move_down(self):
-        if self.move_down_possible():
-            self.current_piece.move_down()
+    def move_down(self, moves: int = 1):
+        if self.move_down_possible(moves):
+            self.current_piece.move_down(moves)
             return True
         else:
-            self.place_piece_on_board()
+            if moves == 1:
+                self.place_piece_on_board()
             return False
 
-    def move_left(self):
-        if self.move_left_possible():
-            self.current_piece.move_left()
+    def move_left(self, moves: int = 1):
+        if self.move_left_possible(moves):
+            self.current_piece.move_left(moves)
             return True
         return False
 
-    def move_right(self) -> bool:
-        if self.move_right_possible():
-            self.current_piece.move_right()
+    def move_right(self, moves: int = 1) -> bool:
+        if self.move_right_possible(moves):
+            self.current_piece.move_right(moves)
             return True
         return False
 
-    def move_down_possible(self) -> bool:
+    def move_down_possible(self, moves: int = 1) -> bool:
         px, py = self.current_piece.zero_based_corner_xy
-        py = py + 1
+        py = py + moves
         for (y, x), value in np.ndenumerate(self.current_piece.shape):
             if value != 0 and py + y >= 0:
                 if (
@@ -153,18 +145,18 @@ class GameState:
                     return False
         return True
 
-    def move_left_possible(self) -> bool:
+    def move_left_possible(self, moves: int = 1) -> bool:
         px, py = self.current_piece.zero_based_corner_xy
-        px = px - 1
+        px = px - moves
         for (y, x), value in np.ndenumerate(self.current_piece.shape):
             if value != 0 and py + y >= 0:
                 if px + x < 0 or self.board.board[py + y, px + x] != 0:
                     return False
         return True
 
-    def move_right_possible(self) -> bool:
+    def move_right_possible(self, moves: int = 1) -> bool:
         px, py = self.current_piece.zero_based_corner_xy
-        px = px + 1
+        px = px + moves
         for (y, x), value in np.ndenumerate(self.current_piece.shape):
             if value != 0 and px + x >= 0 and py + y >= 0:
                 if (
@@ -174,14 +166,14 @@ class GameState:
                     return False
         return True
 
-    def rot_ccw_possible(self):
+    def rot_ccw_possible(self, rot: int = 1):
         p = self.current_piece.clone()
-        p.rot_ccw()
+        p.rot_ccw(rot)
         return self.rot_possible(p.shape)
 
-    def rot_cw_possible(self):
+    def rot_cw_possible(self, rot: int = 1):
         p = self.current_piece.clone()
-        p.rot_cw()
+        p.rot_cw(rot)
         return self.rot_possible(p.shape)
 
     def rot_possible(self, shape) -> bool:
@@ -197,15 +189,15 @@ class GameState:
                     return False
         return True
 
-    def rot_ccw(self) -> bool:
-        if self.rot_ccw_possible():
-            self.current_piece.rot_ccw()
+    def rot_ccw(self, rot: int = 1) -> bool:
+        if self.rot_ccw_possible(rot):
+            self.current_piece.rot_ccw(rot)
             return True
         return False
 
-    def rot_cw(self):
-        if self.rot_cw_possible():
-            self.current_piece.rot_cw()
+    def rot_cw(self, rot: int = 1):
+        if self.rot_cw_possible(rot):
+            self.current_piece.rot_cw(rot)
             return True
         return False
 
