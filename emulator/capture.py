@@ -1,19 +1,19 @@
 import os
 
 import numpy as np
+from Cocoa import NSApplicationActivateIgnoringOtherApps, NSRunningApplication
 from mss import mss
-
-from Cocoa import NSRunningApplication, NSApplicationActivateIgnoringOtherApps
 from Quartz import (
     CGWindowListCopyWindowInfo,
     kCGNullWindowID,
     kCGWindowListOptionOnScreenOnly,
 )
 
+from .manage import EMULATOR_NAME
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
-# fceux window offsets to ignore
+# window offsets to ignore
 titlebar = 25
 buffer_y = 20
 
@@ -46,7 +46,7 @@ def get_emulator_location(name, bring_to_front=False):
 def screenshot_generator():
     with mss() as sct:
         while True:
-            location = get_emulator_location("Nestopia", False)
+            location = get_emulator_location(EMULATOR_NAME, False)
             if location is None:
                 print("Can't find emulator window")
                 return
