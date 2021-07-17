@@ -4,6 +4,7 @@ from typing import Tuple, Union
 import cv2
 import numpy as np
 import pytesseract
+
 from tetris import Board, Piece, Tetrominoes
 
 cur_dir = os.path.dirname(os.path.abspath(__file__))
