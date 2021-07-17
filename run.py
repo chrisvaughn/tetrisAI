@@ -45,7 +45,7 @@ def run_in_memory(args, weights):
         if cv2.waitKey(1) == ord("q"):
             cv2.destroyAllWindows()
             break
-        game.display()
+        game.display(True)
         if game.state.new_piece() and not move_sequence:
             drop_enabled = False
             move_count += 1

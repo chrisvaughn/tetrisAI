@@ -41,11 +41,20 @@ class GameState:
 
     def display(self, in_bounds=False):
         block_size = 28
+        x_offset = 5
+        y_offset = 5
         virtual_board = np.zeros(
-            (Board.rows * block_size, Board.columns * block_size, 3), dtype=np.uint8
+            (
+                (Board.rows + (y_offset * 2)) * block_size,
+                (Board.columns + (x_offset * 2)) * block_size,
+                3,
+            ),
+            dtype=np.uint8,
         )
         for y, cols in enumerate(self.board.board):
+            y = y + y_offset
             for x, cell in enumerate(cols):
+                x = x + x_offset
                 cv2.rectangle(
                     virtual_board,
                     (x * block_size, y * block_size),
@@ -53,8 +62,30 @@ class GameState:
                     (255, 255, 255),
                     cv2.FILLED if cell != 0 else None,
                 )
+        if self.current_piece and in_bounds:
+            (sx, sy), (_, _), (w, h) = self.current_piece.in_bounds_rect()
+            px, py = self.current_piece.zero_based_corner_xy
+            px = px + x_offset
+            py = py + y_offset
+            for (y, x), value in np.ndenumerate(self.current_piece.shape):
+                if sx <= x < sx + w and sy <= y < sy + h:
+                    cv2.rectangle(
+                        virtual_board,
+                        (
+                            (px + x) * block_size,
+                            (py + y) * block_size,
+                        ),
+                        (
+                            (px + x + 1) * block_size,
+                            (py + y + 1) * block_size,
+                        ),
+                        (0, 0, 255),
+                        cv2.FILLED,
+                    )
         if self.current_piece:
             px, py = self.current_piece.zero_based_corner_xy
+            px = px + x_offset
+            py = py + y_offset
             for (y, x), value in np.ndenumerate(self.current_piece.shape):
                 if value != 0:
                     cv2.rectangle(
@@ -70,9 +101,23 @@ class GameState:
                         (255, 0, 0),
                         cv2.FILLED,
                     )
+                else:
+                    cv2.rectangle(
+                        virtual_board,
+                        (
+                            (px + x) * block_size,
+                            (py + y) * block_size,
+                        ),
+                        (
+                            (px + x + 1) * block_size,
+                            (py + y + 1) * block_size,
+                        ),
+                        (0, 255, 0),
+                        None,
+                    )
 
         font = cv2.FONT_HERSHEY_SIMPLEX
-        org = (block_size * 2, block_size * 2)
+        org = (block_size * 2, block_size * 2 + y_offset)
         font_scale = 1
         color = (255, 255, 0)
         thickness = 2
@@ -132,39 +177,30 @@ class GameState:
             return True
         return False
 
+    def move_possible(self, p: Piece) -> bool:
+        if p.all_segments_in_bounds():
+            (sx, sy), (px, py), (w, h) = p.in_bounds_rect()
+            return (
+                self.board.board[py : py + h, px : px + w]
+                * p.shape[sy : sy + h, sx : sx + w]
+            ).sum() == 0
+        else:
+            return False
+
     def move_down_possible(self, moves: int = 1) -> bool:
-        px, py = self.current_piece.zero_based_corner_xy
-        py = py + moves
-        for (y, x), value in np.ndenumerate(self.current_piece.shape):
-            if value != 0 and py + y >= 0:
-                if (
-                    py + y >= self.board.rows
-                    or px + x >= self.board.columns
-                    or self.board.board[py + y, px + x] != 0
-                ):
-                    return False
-        return True
+        p = self.current_piece.clone()
+        p.move_down(moves)
+        return self.move_possible(p)
 
     def move_left_possible(self, moves: int = 1) -> bool:
-        px, py = self.current_piece.zero_based_corner_xy
-        px = px - moves
-        for (y, x), value in np.ndenumerate(self.current_piece.shape):
-            if value != 0 and py + y >= 0:
-                if px + x < 0 or self.board.board[py + y, px + x] != 0:
-                    return False
-        return True
+        p = self.current_piece.clone()
+        p.move_left(moves)
+        return self.move_possible(p)
 
     def move_right_possible(self, moves: int = 1) -> bool:
-        px, py = self.current_piece.zero_based_corner_xy
-        px = px + moves
-        for (y, x), value in np.ndenumerate(self.current_piece.shape):
-            if value != 0 and px + x >= 0 and py + y >= 0:
-                if (
-                    px + x >= self.board.columns
-                    or self.board.board[py + y, px + x] != 0
-                ):
-                    return False
-        return True
+        p = self.current_piece.clone()
+        p.move_right(moves)
+        return self.move_possible(p)
 
     def rot_ccw_possible(self, rot: int = 1):
         p = self.current_piece.clone()

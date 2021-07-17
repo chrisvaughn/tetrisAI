@@ -31,6 +31,39 @@ class Piece:
     def zero_based_corner_xy(self) -> Tuple[int, int]:
         return self._x - 2 - 1, self._y - 2 - 1
 
+    def in_bounds_rect(
+        self,
+    ) -> Tuple[Tuple[int, int], Tuple[int, int], Tuple[int, int]]:
+        max_rows = 20
+        max_columns = 10
+        zx, zy = self.zero_based_corner_xy
+        sx, sy = 0, 0
+        px, py = zx, zy
+        w, h = self.shape.shape
+        if zx < 0:
+            sx = abs(zx)
+            px = 0
+            w = w - abs(zx)
+        elif zx + w >= max_columns:
+            sx = 0
+            px = zx
+            w = max_columns - zx
+
+        if zy < 0:
+            sy = abs(zy)
+            py = 0
+            h = h - abs(zy)
+        elif zy + h >= max_rows:
+            sy = 0
+            py = zy
+            h = max_rows - zy
+
+        return (sx, sy), (px, py), (w, h)
+
+    def all_segments_in_bounds(self) -> bool:
+        (sx, sy), (_, _), (w, h) = self.in_bounds_rect()
+        return np.count_nonzero(self.shape[sy : sy + h, sx : sx + w]) == 4
+
     # 0-based, left most x, top most y, number of rotations of detection shape
     def set_detected_position(self, x: int, y: int, shape_idx: int):
         self.current_shape_idx = shape_idx
