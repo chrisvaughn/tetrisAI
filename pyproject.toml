@@ -12,6 +12,7 @@ pyobjc-framework-Quartz = "^7.2"
 mss = "^6.1.0"
 pytesseract = "^0.3.7"
 progressbar = "^2.5"
+applescript = "^2021.2.9"
 
 [tool.poetry.dev-dependencies]
 black = "^21.5b2"

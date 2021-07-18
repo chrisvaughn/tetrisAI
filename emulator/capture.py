@@ -9,8 +9,6 @@ from Quartz import (
     kCGWindowListOptionOnScreenOnly,
 )
 
-from .manage import EMULATOR_NAME
-
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
 # window offsets to ignore
@@ -43,10 +41,10 @@ def get_emulator_location(name, bring_to_front=False):
             }
 
 
-def screenshot_generator():
+def screenshot_generator(emulator_name):
     with mss() as sct:
         while True:
-            location = get_emulator_location(EMULATOR_NAME, False)
+            location = get_emulator_location(emulator_name, False)
             if location is None:
                 print("Can't find emulator window")
                 return

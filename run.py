@@ -89,7 +89,7 @@ def run_with_emulator(args, weights):
     lines_completed = 0
     detector = None
     aie = Evaluator(gs, weights)
-    for screen in capture.screenshot_generator():
+    for screen in capture.screenshot_generator(manage.EMULATOR_NAME):
         hold = None
         if screen.shape[0] > 240:
             screen = cv2.resize(screen, (256, 240), interpolation=cv2.INTER_AREA)
@@ -131,7 +131,7 @@ def run_with_emulator(args, weights):
         if move_sequence:
             move = move_sequence.pop(0)
             keyboard.send_events(emulator.pid, move, hold)
-            drop_enabled = True
+            drop_enabled = False
         elif drop_enabled:
             keyboard.send_event_on(emulator.pid, "move_down")
 
