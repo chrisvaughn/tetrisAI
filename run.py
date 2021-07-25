@@ -9,7 +9,7 @@ import cv2
 
 from bot import Detectorist, Evaluator, defined_weights, get_pool
 from emulator import capture, keyboard, manage
-from tetris import Board, GameState
+from tetris import Game, GameState
 
 
 def get_weights(use_save=True):
@@ -33,53 +33,41 @@ def main(args):
 
 def run_in_memory(args, weights):
     seed = args.seed
-    gs = GameState(Board(), None, None, seed)
-    cp = gs.select_next_piece()
-    gs.update(gs.board, cp, None)
     move_count = 0
+    drop_enabled = False
     move_sequence = []
-    game_over = False
-    lines = 0
-    aie = Evaluator(gs, weights)
-    while not game_over:
+    game = Game(seed)
+    game.display()
+    aie = Evaluator(game.state, weights)
+    game.start()
+    while not game.game_over:
         if cv2.waitKey(1) == ord("q"):
             cv2.destroyAllWindows()
             break
-        gs.display()
-        if gs.new_piece() and not move_sequence:
+        game.display()
+        if game.state.new_piece() and not move_sequence:
+            drop_enabled = False
             move_count += 1
-            aie.update_state(gs)
+            aie.update_state(game.state)
             best_move, time_taken, moves_considered = aie.best_move(debug=False)
             move_sequence = best_move.to_sequence()
             if args.stats:
                 print(
-                    f"Move {move_count}: Piece: {gs.current_piece.name}, Considered {moves_considered} moves in {int(time_taken * 1000)} ms."
+                    f"Move {move_count}: Piece: {game.state.current_piece.name}, Considered {moves_considered} moves in {int(time_taken * 1000)} ms."
                 )
                 print(f"\tSequence: {move_sequence}")
         if move_sequence:
             moves = move_sequence.pop(0)
             for move in moves:
                 if move != "noop":
-                    getattr(gs, move)()
-            gs.move_down()
-            gs.update(gs.board, gs.current_piece)
-        else:
-            moved_down = gs.move_down()
-            gs.update(gs.board, cp)
-            if not moved_down:
-                game_over = gs.check_game_over()
-                if game_over:
-                    print(f"Moves: {move_count}")
-                    print(f"Lines: {lines}")
-                    print(f"Seed: {seed}")
-                else:
-                    lines += gs.check_full_lines()
-                    cp = gs.select_next_piece()
-                    gs.update(gs.board, cp)
+                    getattr(game, move)()
+            game.move_seq_complete()
+            drop_enabled = True
+        elif drop_enabled:
+            game.move_down()
 
 
 def run_with_emulator(args, weights):
-
     emulator = manage.launch()
 
     gs = None

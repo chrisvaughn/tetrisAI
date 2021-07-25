@@ -20,9 +20,9 @@ class GameState:
     def __init__(
         self,
         board: Board,
-        current_piece: Union[Piece, None],
+        current_piece: Union[Piece, None] = None,
         next_piece: Union[Piece, None] = None,
-        seed: int = 0,
+        seed: int = time.time_ns(),
     ):
         self.board = board
         self.current_piece = current_piece
