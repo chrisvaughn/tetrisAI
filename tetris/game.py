@@ -12,7 +12,7 @@ class Game:
         else:
             self.state = GameState(Board())
         self.state_lock = threading.Lock()
-        self.gravity = 30
+        self.gravity = 1
         self.game_over = False
         self.lines = 0
         self.piece_count = 0
@@ -21,8 +21,8 @@ class Game:
     def start(self):
         self.game_thread.start()
 
-    def display(self):
-        self.state.display()
+    def display(self, in_bounds: bool = False):
+        self.state.display(in_bounds)
 
     def run(self) -> int:
         cp = self.state.select_next_piece()

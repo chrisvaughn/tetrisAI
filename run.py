@@ -33,6 +33,7 @@ def main(args):
 
 def run_in_memory(args, weights):
     seed = args.seed
+    no_soft_drop = args.nodrop
     move_count = 0
     drop_enabled = False
     move_sequence = []
@@ -63,13 +64,13 @@ def run_in_memory(args, weights):
                     getattr(game, move)()
             game.move_seq_complete()
             drop_enabled = True
-        elif drop_enabled:
+        elif drop_enabled and not no_soft_drop:
             game.move_down()
 
 
 def run_with_emulator(args, weights):
     emulator = manage.launch()
-
+    no_soft_drop = args.nodrop
     gs = None
     move_sequence = []
     move_count = 0
@@ -120,7 +121,7 @@ def run_with_emulator(args, weights):
             move = move_sequence.pop(0)
             keyboard.send_events(emulator.pid, move, hold)
             drop_enabled = False
-        elif drop_enabled:
+        elif drop_enabled and not no_soft_drop:
             keyboard.send_event_on(emulator.pid, "move_down")
 
 
@@ -142,6 +143,12 @@ if __name__ == "__main__":
         action="store_true",
         default=False,
         help="use weights from save file if present",
+    )
+    parser.add_argument(
+        "--nodrop",
+        action="store_true",
+        default=False,
+        help="do not soft drop pieces",
     )
     args = parser.parse_args()
     main(args)
