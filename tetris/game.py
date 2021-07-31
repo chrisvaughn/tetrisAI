@@ -12,7 +12,7 @@ class Game:
         else:
             self.state = GameState(Board())
         self.state_lock = threading.Lock()
-        self.gravity = 1
+        self.gravity = 10
         self.game_over = False
         self.lines = 0
         self.piece_count = 0

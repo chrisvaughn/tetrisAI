@@ -39,7 +39,7 @@ class GameState:
         p.set_position(6, 1)
         return p
 
-    def display(self):
+    def display(self, in_bounds=False):
         block_size = 28
         virtual_board = np.zeros(
             (Board.rows * block_size, Board.columns * block_size, 3), dtype=np.uint8
