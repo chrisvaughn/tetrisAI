@@ -34,7 +34,7 @@ class GA:
         self.fitness = fitness
         self.save_file = save_file
 
-        self.select_best_n = 20
+        self.select_best_n = 15
         self.mutation_rate = 0.05
         self.mutation_step = 0.2
 
@@ -75,8 +75,8 @@ class GA:
         return best_performers[: self.select_best_n]
 
     def combine_and_mutate(self, parents: List[Genome]):
-        children = []
-        for i in range(self.population_size):
+        children = [parents[0], parents[1]]
+        for i in range(self.population_size - 2):
             mom_or_dad = [random.choice(parents), random.choice(parents)]
             child_weights = Weights()
             for field in child_weights.__dict__.keys():

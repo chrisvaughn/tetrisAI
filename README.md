@@ -1,9 +1,10 @@
 # tetrisAI
 
-#python 3.8
+#python 3.9
 
 ```
-pyenv virtualenv 3.8.6 tetrisAI
+pyenv install 3.9.7 --skip-existing
+pyenv virtualenv 3.9.7 tetrisAI
 pyenv local tetrisAI
 ```
 
