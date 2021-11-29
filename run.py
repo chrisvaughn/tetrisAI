@@ -69,7 +69,7 @@ def run_in_memory(args, weights):
 
 
 def run_with_emulator(args, weights):
-    emulator = manage.launch()
+    emulator = manage.launch(args.limit_speed, args.music)
     no_soft_drop = args.nodrop
     gs = None
     move_sequence = []
@@ -150,5 +150,16 @@ if __name__ == "__main__":
         default=False,
         help="do not soft drop pieces",
     )
+    parser.add_argument(
+        "--limit-speed",
+        dest="limit_speed",
+        action="store_true",
+        default=False,
+        help="applies cheat to emulator to limit speed to level 19",
+    )
+    parser.add_argument(
+        "--music", action="store_true", default=False, help="play music"
+    )
+
     args = parser.parse_args()
     main(args)

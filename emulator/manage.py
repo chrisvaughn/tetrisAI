@@ -20,6 +20,13 @@ def enter_speed_cheat():
     return r.code == 0
 
 
+def music_off(pid: int):
+    print("Turning Music Off")
+    for _ in range(3):
+        keyboard.send_event(pid, "move_down", hold=0.5)
+        time.sleep(0.5)
+
+
 def select_level(pid: int, level: int):
     print(f"Selecting Level {level}")
     if level < 5:
@@ -54,16 +61,20 @@ def select_level(pid: int, level: int):
     keyboard.send_event_off(pid, "rot_cw")
 
 
-def launch():
+def launch(limit_speed=False, music=False):
     process = subprocess.Popen([EMULATOR_PATH, ROM_PATH], stderr=None, stdout=None)
     print("Waiting for Start Screen")
     time.sleep(2)
 
-    if enter_speed_cheat():
-        print("Level 19 Speed Cheat Applied")
+    if limit_speed:
+        print("Entering Speed Cheat")
+        if enter_speed_cheat():
+            print("Level 19 Speed Cheat Applied")
+        else:
+            print("Failed to apply cheat")
+        time.sleep(3)
     else:
-        print("Failed to apply cheat")
-    time.sleep(3)
+        print("Not applying speed cheat")
 
     start_template = cv2.imread(
         os.path.join(image_path, "push_start.png"), cv2.IMREAD_GRAYSCALE
@@ -81,13 +92,12 @@ def launch():
     keyboard.send_event(process.pid, "return", hold=0.5)
     time.sleep(1)
 
+    if not music:
+        music_off(process.pid)
+
     print("Select Game Type A")
     keyboard.send_event(process.pid, "return", hold=0.5)
     time.sleep(1)
-
-    # print("Select Music")
-    # keyboard.send_event(process.pid, "return", hold=0.5)
-    # time.sleep(3)
 
     select_level(process.pid, 19)
 
