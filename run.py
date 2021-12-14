@@ -80,9 +80,6 @@ def run_with_emulator(args, weights):
     aie = Evaluator(gs, weights)
     for screen in capture.screenshot_generator(manage.EMULATOR_NAME):
         hold = None
-        if screen.shape[0] > 240:
-            screen = cv2.resize(screen, (256, 240), interpolation=cv2.INTER_AREA)
-        screen = cv2.cvtColor(screen, cv2.COLOR_BGR2GRAY)
         if detector is None:
             detector = Detectorist(screen, 10, 5)
         else:

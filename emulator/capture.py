@@ -1,5 +1,6 @@
 import os
 
+import cv2
 import numpy as np
 from Cocoa import NSApplicationActivateIgnoringOtherApps, NSRunningApplication
 from mss import mss
@@ -57,5 +58,8 @@ def screenshot_generator(emulator_name):
 
             img = sct.grab(mon)
             img = np.array(img)
+            if img.shape[0] > 240:
+                img = cv2.resize(img, (256, 240), interpolation=cv2.INTER_AREA)
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
             yield img
