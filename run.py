@@ -8,7 +8,7 @@ import time
 import cv2
 
 from bot import Detectorist, Evaluator, defined_weights, get_pool
-from emulator import capture, keyboard, manage
+from emulator import Emulator, capture
 from tetris import Game, GameState
 
 
@@ -69,7 +69,7 @@ def run_in_memory(args, weights):
 
 
 def run_with_emulator(args, weights):
-    emulator = manage.launch(args.limit_speed, args.music)
+    emulator = Emulator(args.limit_speed, args.music)
     no_soft_drop = args.nodrop
     gs = None
     move_sequence = []
@@ -78,8 +78,7 @@ def run_with_emulator(args, weights):
     lines_completed = 0
     detector = None
     aie = Evaluator(gs, weights)
-    for screen in capture.screenshot_generator(manage.EMULATOR_NAME):
-        hold = None
+    for screen in emulator.capture.images:
         if detector is None:
             detector = Detectorist(screen, 10, 5)
         else:
@@ -87,7 +86,7 @@ def run_with_emulator(args, weights):
         if detector.board.game_over():
             print("Game Over")
             print(f"Lines Completed: {lines_completed}")
-            manage.destroy(emulator)
+            emulator.destroy()
             return
 
         if not gs:
@@ -99,7 +98,7 @@ def run_with_emulator(args, weights):
             gs.update(detector.board, detector.current_piece, detector.next_piece)
 
         if gs.new_piece() and not move_sequence:
-            keyboard.send_event_off(emulator.pid, "move_down")
+            emulator.drop_off()
             drop_enabled = False
             move_count += 1
             aie.update_state(gs)
@@ -115,11 +114,11 @@ def run_with_emulator(args, weights):
                 lines_completed += best_move.lines_completed
 
         if move_sequence:
-            move = move_sequence.pop(0)
-            keyboard.send_events(emulator.pid, move, hold)
+            moves = move_sequence.pop(0)
+            emulator.press_keys(moves)
             drop_enabled = False
         elif drop_enabled and not no_soft_drop:
-            keyboard.send_event_on(emulator.pid, "move_down")
+            emulator.drop_on()
 
 
 if __name__ == "__main__":

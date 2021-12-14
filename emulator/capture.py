@@ -1,4 +1,4 @@
-import os
+import time
 
 import cv2
 import numpy as np
@@ -10,56 +10,71 @@ from Quartz import (
     kCGWindowListOptionOnScreenOnly,
 )
 
-dir_path = os.path.dirname(os.path.realpath(__file__))
 
-# window offsets to ignore
-titlebar = 25
-buffer_y = 20
+class Capture:
+    # window offsets to ignore
+    titlebar = 25
+    buffer_y = 20
 
+    def __init__(self, emulator_name, fps=30):
+        self.fps = fps
+        self.emulator_name = emulator_name
+        self.images = self.screenshot_generator()
+        self.capture_time = 1 / fps
+        self.enabled = True
+        self.location = None
+        self.last_location_check = 0
 
-def get_emulator_pid(name):
-    wl = CGWindowListCopyWindowInfo(kCGWindowListOptionOnScreenOnly, kCGNullWindowID)
-    for v in wl:
-        if name in v.valueForKey_("kCGWindowOwnerName"):
-            return int(v.valueForKey_("kCGWindowOwnerPID"))
+    def stop_capturing(self):
+        self.enabled = False
 
+    def _location(self, bring_to_front=False):
+        wl = CGWindowListCopyWindowInfo(
+            kCGWindowListOptionOnScreenOnly, kCGNullWindowID
+        )
+        for v in wl:
+            if self.emulator_name in v.valueForKey_("kCGWindowOwnerName"):
+                if v.valueForKey_("kCGWindowBounds") is None:
+                    return None
+                if bring_to_front:
+                    pid = int(v.valueForKey_("kCGWindowOwnerPID"))
+                    x = NSRunningApplication.runningApplicationWithProcessIdentifier_(
+                        pid
+                    )
+                    x.activateWithOptions_(NSApplicationActivateIgnoringOtherApps)
+                return {
+                    "x": int(v.valueForKey_("kCGWindowBounds").valueForKey_("X")),
+                    "y": int(v.valueForKey_("kCGWindowBounds").valueForKey_("Y")),
+                    "height": int(
+                        v.valueForKey_("kCGWindowBounds").valueForKey_("Height")
+                    ),
+                    "width": int(
+                        v.valueForKey_("kCGWindowBounds").valueForKey_("Width")
+                    ),
+                }
 
-def get_emulator_location(name, bring_to_front=False):
-    wl = CGWindowListCopyWindowInfo(kCGWindowListOptionOnScreenOnly, kCGNullWindowID)
-    for v in wl:
-        if name in v.valueForKey_("kCGWindowOwnerName"):
-            if v.valueForKey_("kCGWindowBounds") is None:
-                return None
-            if bring_to_front:
-                pid = int(v.valueForKey_("kCGWindowOwnerPID"))
-                x = NSRunningApplication.runningApplicationWithProcessIdentifier_(pid)
-                x.activateWithOptions_(NSApplicationActivateIgnoringOtherApps)
-            return {
-                "x": int(v.valueForKey_("kCGWindowBounds").valueForKey_("X")),
-                "y": int(v.valueForKey_("kCGWindowBounds").valueForKey_("Y")),
-                "height": int(v.valueForKey_("kCGWindowBounds").valueForKey_("Height")),
-                "width": int(v.valueForKey_("kCGWindowBounds").valueForKey_("Width")),
-            }
+    def screenshot_generator(self):
+        with mss() as sct:
+            while self.enabled:
+                time.sleep(self.capture_time)
+                if time.time() - self.last_location_check > 1:
+                    self.location = self._location(False)
+                    self.last_location_check = time.time()
+                if self.location is None:
+                    print("Can't find emulator window")
+                    continue
 
+                mon = {
+                    "top": self.location["y"] + Capture.titlebar,
+                    "left": self.location["x"],
+                    "width": self.location["width"],
+                    "height": self.location["height"] - Capture.titlebar,
+                }
 
-def screenshot_generator(emulator_name):
-    with mss() as sct:
-        while True:
-            location = get_emulator_location(emulator_name, False)
-            if location is None:
-                print("Can't find emulator window")
-                return
-            mon = {
-                "top": location["y"] + titlebar,
-                "left": location["x"],
-                "width": location["width"],
-                "height": location["height"] - titlebar,
-            }
+                img = sct.grab(mon)
+                img = np.array(img)
+                if img.shape[0] > 240:
+                    img = cv2.resize(img, (256, 240), interpolation=cv2.INTER_AREA)
+                img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-            img = sct.grab(mon)
-            img = np.array(img)
-            if img.shape[0] > 240:
-                img = cv2.resize(img, (256, 240), interpolation=cv2.INTER_AREA)
-            img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-
-            yield img
+                yield img
