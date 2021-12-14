@@ -78,7 +78,8 @@ def run_with_emulator(args, weights):
     lines_completed = 0
     detector = None
     aie = Evaluator(gs, weights)
-    for screen in emulator.capture.images:
+    while True:
+        screen = emulator.get_latest_image()
         if detector is None:
             detector = Detectorist(screen, 10, 5)
         else:
@@ -116,7 +117,7 @@ def run_with_emulator(args, weights):
         if move_sequence:
             moves = move_sequence.pop(0)
             emulator.press_keys(moves)
-            drop_enabled = False
+            drop_enabled = True
         elif drop_enabled and not no_soft_drop:
             emulator.drop_on()
 

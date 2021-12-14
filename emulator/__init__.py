@@ -177,3 +177,6 @@ class Emulator:
     def destroy(self):
         self.capture.stop_capturing()
         self.process.kill()
+
+    def get_latest_image(self):
+        return self.capture.latest_image

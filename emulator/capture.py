@@ -24,6 +24,11 @@ class Capture:
         self.enabled = True
         self.location = None
         self.last_location_check = 0
+        self.last_location_check_interval = 0.5
+
+    @property
+    def latest_image(self):
+        return next(self.images)
 
     def stop_capturing(self):
         self.enabled = False
@@ -56,8 +61,11 @@ class Capture:
     def screenshot_generator(self):
         with mss() as sct:
             while self.enabled:
-                time.sleep(self.capture_time)
-                if time.time() - self.last_location_check > 1:
+                # time.sleep(self.capture_time)
+                if (
+                    time.time() - self.last_location_check
+                    > self.last_location_check_interval
+                ):
                     self.location = self._location(False)
                     self.last_location_check = time.time()
                 if self.location is None:
