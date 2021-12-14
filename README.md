@@ -3,8 +3,10 @@
 #python 3.9
 
 ```
-pyenv install 3.9.7 --skip-existing
-pyenv virtualenv 3.9.7 tetrisAI
+export py_version=3.9.9
+pyenv install $py_version --skip-existing
+pyenv uninstall -f tetrisAI
+pyenv virtualenv $py_version tetrisAI
 pyenv local tetrisAI
 ```
 
