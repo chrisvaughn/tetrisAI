@@ -79,6 +79,8 @@ def run_with_emulator(args, weights):
     aie = Evaluator(gs, weights)
     while True:
         screen = emulator.get_latest_image()
+        if screen is None:
+            print("No screen")
         if detector is None:
             detector = Detectorist(screen, 10, 5)
         else:
@@ -97,7 +99,7 @@ def run_with_emulator(args, weights):
         else:
             gs.update(detector.board, detector.current_piece, detector.next_piece)
 
-        if gs.new_piece() and not move_sequence:
+        if gs.new_piece():
             emulator.drop_off()
             move_count += 1
             aie.update_state(gs)
@@ -112,10 +114,11 @@ def run_with_emulator(args, weights):
             if best_move.lines_completed:
                 lines_completed += best_move.lines_completed
 
-        if move_sequence:
+        while move_sequence:
             moves = move_sequence.pop(0)
             emulator.send_multiple_moves(moves)
-        elif soft_drop:
+
+        if soft_drop:
             emulator.drop_on()
 
 
@@ -157,7 +160,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--music", action="store_true", default=False, help="play music"
     )
-    parser.add_argument("--level", default=19, type=int, help="level to start at")
+    parser.add_argument("--level", default=18, type=int, help="level to start at")
 
     args = parser.parse_args()
     main(args)

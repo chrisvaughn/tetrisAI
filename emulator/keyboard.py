@@ -54,8 +54,9 @@ class KeyLog:
 
 class Keyboard:
     def __init__(self, pid: int, debug: bool = False):
-        self.macos_detection_time = 0.01
+        self.macos_detection_time = 0.02
         self.emulator_detection_time = 0.03
+        self.min_time_between_key_presses = 0.04
         self.source = CGEventSourceCreate(kCGEventSourceStateHIDSystemState)
         self.pid = pid
         self.last_keyup_time = 0.0
@@ -95,7 +96,8 @@ class Keyboard:
     ):
         if wait_min_before_press:
             wait_time = max(
-                0.0, self.last_keyup_time + self.key_hold_time - time.time()
+                0.0,
+                self.last_keyup_time + self.min_time_between_key_presses - time.time(),
             )
             if self.debug:
                 print(f"Waiting {wait_time} seconds before pressing {key}")
@@ -108,11 +110,15 @@ class Keyboard:
             self.press_key(key, wait_min_before_press=True, extra_wait=extra_wait)
 
     def simultaneous_key_press(
-        self, keys: Tuple[str], wait_min_before_press: bool = False
+        self,
+        keys: Tuple[str],
+        wait_min_before_press: bool = False,
+        extra_wait: float = 0.0,
     ):
         if wait_min_before_press:
             wait_time = max(
-                0.0, self.last_keyup_time + self.macos_detection_time - time.time()
+                0.0,
+                self.last_keyup_time + self.min_time_between_key_presses - time.time(),
             )
             if self.debug:
                 print(f"Waiting {wait_time} seconds before pressing {keys}")
@@ -122,4 +128,4 @@ class Keyboard:
             keypresses.append(self.key_down(key))
             time.sleep(self.macos_detection_time)
         for keypress in reversed(keypresses):
-            self.keypress_up(keypress)
+            self.keypress_up(keypress, extra_wait)

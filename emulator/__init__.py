@@ -6,7 +6,7 @@ import applescript
 import cv2
 
 from bot.detect import image_path
-from emulator import capture
+from emulator.capture import CaptureController
 from emulator.keyboard import Keyboard
 
 EMULATOR_NAME = "Nestopia"
@@ -49,7 +49,7 @@ class Emulator:
             "move_down": "down",
         }
 
-        self.capture = capture.Capture(self.name)
+        self.capturer = CaptureController(self.name)
         self.process = self.launch(limit_speed, music, level, sound)
 
     def move_to_key(self, move):
@@ -85,22 +85,21 @@ class Emulator:
 
     def select_level(self, level: int):
         print(f"Selecting Level {level}")
-        if level < 5:
-            self.keyboard.press_keys(["right"] * level, extra_wait=0.5)
-        elif level < 10:
-            self.keyboard.press_key("down", extra_wait=0.5)
-            self.keyboard.press_keys(["right"] * (level - 5), extra_wait=0.5)
+        use_option = False
+        if level > 9:
+            use_option = True
+            level -= 10
 
-        if level < 10:
-            self.keyboard.press_key("return", extra_wait=0.5)
-            return
+        if level > 4:
+            self.keyboard.press_key("down", extra_wait=0.3)
+            level -= 5
 
-        if level < 15:
-            self.keyboard.press_keys(["right"] * (level - 10), extra_wait=0.5)
-        elif level < 20:
-            self.keyboard.press_key("down")
-            self.keyboard.press_keys(["right"] * (level - 15), extra_wait=0.5)
-        self.keyboard.simultaneous_key_press(("option", "return"))
+        self.keyboard.press_keys(["right"] * level, extra_wait=0.3)
+
+        if use_option:
+            self.keyboard.simultaneous_key_press(("option", "return"), extra_wait=0.3)
+        else:
+            self.keyboard.press_key("return", extra_wait=0.3)
 
     def launch(self, limit_speed=False, music=False, level=0, sound=False):
         process = subprocess.Popen([self.path, self.rom_path], stderr=None, stdout=None)
@@ -126,11 +125,13 @@ class Emulator:
         start_template = cv2.imread(
             os.path.join(image_path, "push_start.png"), cv2.IMREAD_GRAYSCALE
         )
-        for screen in self.capture.images:
+        while True:
+            screen = self.capturer.latest_image()
             res = cv2.matchTemplate(screen, start_template, cv2.TM_CCOEFF_NORMED)
             min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
             if max_val > 0.4:
                 break
+            time.sleep(0.1)
 
         print("Starting the Game")
         self.keyboard.press_key("return", extra_wait=0.5)
@@ -142,15 +143,16 @@ class Emulator:
 
         print("Select Game Type A")
         self.keyboard.press_key("return", extra_wait=0.5)
-        time.sleep(1)
+
+        time.sleep(0.5)
 
         self.select_level(level)
         return process
 
     def destroy(self):
-        self.capture.stop_capturing()
+        self.capturer.stop()
         self.process.kill()
         self.keyboard.keylog.output()
 
     def get_latest_image(self):
-        return self.capture.latest_image
+        return self.capturer.latest_image()
