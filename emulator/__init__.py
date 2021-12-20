@@ -4,15 +4,10 @@ import time
 
 import applescript
 import cv2
-from Quartz import (
-    CGEventCreateKeyboardEvent,
-    CGEventPostToPid,
-    CGEventSourceCreate,
-    kCGEventSourceStateHIDSystemState,
-)
 
 from bot.detect import image_path
 from emulator import capture
+from emulator.keyboard import Keyboard
 
 EMULATOR_NAME = "Nestopia"
 EMULATOR_PATH = "/Applications/Nestopia.app/Contents/MacOS/Nestopia"
@@ -26,120 +21,91 @@ def enter_speed_cheat():
     return r.code == 0
 
 
-class Keyboard:
-    def __init__(self):
-        self.key_map = {
-            "rot_ccw": 60,
-            "rot_cw": 61,
-            "move_left": 123,
-            "move_right": 124,
-            "move_down": 125,
-            "return": 36,
-        }
-        self.default_hold_time = 0.03
-        self.min_hold_time = 0.001
-        self.source = CGEventSourceCreate(kCGEventSourceStateHIDSystemState)
+def enable_sound():
+    r = applescript.run(os.path.join(dir_path, "enable_nestopia_sound.scpt"))
+    return r.code == 0
 
-    def move_to_key(self, move):
-        return self.key_map.get(move, None)
 
-    def key_down(self, pid, move) -> bool:
-        keycode = self.move_to_key(move)
-        if keycode is None:
-            return False
-        event = CGEventCreateKeyboardEvent(self.source, keycode, True)
-        CGEventPostToPid(pid, event)
-        return True
-
-    def key_up(self, pid, move) -> bool:
-        keycode = self.move_to_key(move)
-        if keycode is None:
-            return False
-        event = CGEventCreateKeyboardEvent(self.source, keycode, False)
-        CGEventPostToPid(pid, event)
-        return True
+def disable_sound():
+    r = applescript.run(os.path.join(dir_path, "disable_nestopia_sound.scpt"))
+    return r.code == 0
 
 
 class Emulator:
-    def __init__(self, limit_speed=True, music=False):
+    def __init__(self, limit_speed=True, music=False, level=19, sound=False):
+        self.keyboard = None
+        self.pid = None
+
         self.name = EMULATOR_NAME
         self.path = EMULATOR_PATH
         self.rom_path = ROM_PATH
-        self.pid = None
-        self.keyboard = Keyboard()
+        self.drop_keypress = None
+
+        self.move_to_key_map = {
+            "rot_ccw": "shift",
+            "rot_cw": "option",
+            "move_left": "left",
+            "move_right": "right",
+            "move_down": "down",
+        }
+
         self.capture = capture.Capture(self.name)
-        self.process = self.launch(limit_speed, music)
+        self.process = self.launch(limit_speed, music, level, sound)
 
-    def press_key(self, move, hold=None):
-        if hold is None:
-            hold = self.keyboard.default_hold_time
-        if self.keyboard.key_down(self.pid, move):
-            time.sleep(hold)
-            self.keyboard.key_up(self.pid, move)
+    def move_to_key(self, move):
+        return self.move_to_key_map.get(move, None)
 
-    def press_keys(self, moves, hold=None):
-        if hold is None:
-            hold = self.keyboard.default_hold_time
+    def send_move(self, move):
+        keycode = self.move_to_key(move)
+        if keycode is None:
+            return False
+        self.keyboard.press_key(keycode)
+
+    def send_moves(self, moves):
         for move in moves:
-            if self.keyboard.key_down(self.pid, move):
-                time.sleep(self.keyboard.min_hold_time)
+            self.send_move(move)
 
-        time.sleep(hold)
-
-        for move in reversed(moves):
-            if self.keyboard.key_up(self.pid, move):
-                time.sleep(self.keyboard.min_hold_time)
+    def send_multiple_moves(self, moves):
+        keys = [k for k in [self.move_to_key(move) for move in moves] if k is not None]
+        self.keyboard.simultaneous_key_press(keys, wait_min_before_press=True)
 
     def drop_on(self):
-        self.keyboard.key_down(self.pid, "move_down")
+        if not self.drop_keypress:
+            kp = self.keyboard.key_down("down")
+            self.drop_keypress = kp
 
     def drop_off(self):
-        self.keyboard.key_up(self.pid, "move_down")
+        if self.drop_keypress:
+            self.keyboard.keypress_up(self.drop_keypress)
+            self.drop_keypress = None
 
     def music_off(self):
         print("Turning Music Off")
-        for _ in range(3):
-            self.press_key("move_down", hold=0.5)
-            time.sleep(0.5)
+        self.keyboard.press_keys(("down", "down", "down"), extra_wait=0.5)
 
     def select_level(self, level: int):
         print(f"Selecting Level {level}")
         if level < 5:
-            for _ in range(level):
-                self.press_key("move_right", hold=0.5)
-                time.sleep(0.5)
+            self.keyboard.press_keys(["right"] * level, extra_wait=0.5)
         elif level < 10:
-            self.press_key("move_down", hold=0.5)
-            for _ in range(level - 5):
-                self.press_key("move_right", hold=0.5)
-                time.sleep(0.5)
+            self.keyboard.press_key("down", extra_wait=0.5)
+            self.keyboard.press_keys(["right"] * (level - 5), extra_wait=0.5)
 
         if level < 10:
-            self.press_key("return", hold=0.5)
+            self.keyboard.press_key("return", extra_wait=0.5)
             return
 
         if level < 15:
-            for _ in range(level - 10):
-                self.press_key("move_right", hold=0.5)
-                time.sleep(0.5)
+            self.keyboard.press_keys(["right"] * (level - 10), extra_wait=0.5)
         elif level < 20:
-            self.press_key("move_down", hold=0.5)
-            for _ in range(level - 15):
-                self.press_key("move_right", hold=0.5)
-                time.sleep(0.5)
+            self.keyboard.press_key("down")
+            self.keyboard.press_keys(["right"] * (level - 15), extra_wait=0.5)
+        self.keyboard.simultaneous_key_press(("option", "return"))
 
-        self.keyboard.key_down(self.pid, "rot_cw")
-        time.sleep(0.03)
-        self.keyboard.key_down(self.pid, "return")
-        time.sleep(0.03)
-        self.keyboard.key_up(self.pid, "return")
-        self.keyboard.key_up(self.pid, "rot_cw")
-
-    def launch(self, limit_speed=False, music=False):
+    def launch(self, limit_speed=False, music=False, level=0, sound=False):
         process = subprocess.Popen([self.path, self.rom_path], stderr=None, stdout=None)
         self.pid = process.pid
-        print("Waiting for Start Screen")
-        time.sleep(2)
+        self.keyboard = Keyboard(self.pid)
 
         if limit_speed:
             print("Entering Speed Cheat")
@@ -147,9 +113,15 @@ class Emulator:
                 print("Level 19 Speed Cheat Applied")
             else:
                 print("Failed to apply cheat")
-            time.sleep(3)
         else:
             print("Not applying speed cheat")
+
+        if sound:
+            print("Enabling Sound")
+            enable_sound()
+        else:
+            print("Disabling sound")
+            disable_sound()
 
         start_template = cv2.imread(
             os.path.join(image_path, "push_start.png"), cv2.IMREAD_GRAYSCALE
@@ -161,22 +133,24 @@ class Emulator:
                 break
 
         print("Starting the Game")
-        self.press_key("return", hold=0.5)
+        self.keyboard.press_key("return", extra_wait=0.5)
         time.sleep(1)
 
-        if not music:
+        if sound and not music:
             self.music_off()
+            time.sleep(1)
 
         print("Select Game Type A")
-        self.press_key("return", hold=0.5)
+        self.keyboard.press_key("return", extra_wait=0.5)
         time.sleep(1)
 
-        self.select_level(19)
+        self.select_level(level)
         return process
 
     def destroy(self):
         self.capture.stop_capturing()
         self.process.kill()
+        self.keyboard.keylog.output()
 
     def get_latest_image(self):
         return self.capture.latest_image

@@ -69,12 +69,11 @@ def run_in_memory(args, weights):
 
 
 def run_with_emulator(args, weights):
-    emulator = Emulator(args.limit_speed, args.music)
-    no_soft_drop = args.nodrop
+    emulator = Emulator(args.limit_speed, args.music, args.level, args.sound)
+    soft_drop = args.drop
     gs = None
     move_sequence = []
     move_count = 0
-    drop_enabled = False
     lines_completed = 0
     detector = None
     aie = Evaluator(gs, weights)
@@ -100,7 +99,6 @@ def run_with_emulator(args, weights):
 
         if gs.new_piece() and not move_sequence:
             emulator.drop_off()
-            drop_enabled = False
             move_count += 1
             aie.update_state(gs)
             best_move, time_taken, moves_considered = aie.best_move()
@@ -116,9 +114,8 @@ def run_with_emulator(args, weights):
 
         if move_sequence:
             moves = move_sequence.pop(0)
-            emulator.press_keys(moves)
-            drop_enabled = True
-        elif drop_enabled and not no_soft_drop:
+            emulator.send_multiple_moves(moves)
+        elif soft_drop:
             emulator.drop_on()
 
 
@@ -142,10 +139,10 @@ if __name__ == "__main__":
         help="use weights from save file if present",
     )
     parser.add_argument(
-        "--nodrop",
+        "--drop",
         action="store_true",
         default=False,
-        help="do not soft drop pieces",
+        help="soft drop pieces",
     )
     parser.add_argument(
         "--limit-speed",
@@ -155,8 +152,12 @@ if __name__ == "__main__":
         help="applies cheat to emulator to limit speed to level 19",
     )
     parser.add_argument(
+        "--sound", action="store_true", default=False, help="enable all sounds"
+    )
+    parser.add_argument(
         "--music", action="store_true", default=False, help="play music"
     )
+    parser.add_argument("--level", default=19, type=int, help="level to start at")
 
     args = parser.parse_args()
     main(args)
