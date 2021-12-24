@@ -3,7 +3,6 @@ from typing import Tuple, Union
 
 import cv2
 import numpy as np
-import pytesseract
 
 from tetris import Board, Piece, Tetrominoes
 
@@ -59,10 +58,6 @@ class Detectorist:
         self._detect_current_piece()
         if (self._detection_count % self._detect_next_piece_every) == 0:
             self._detect_next_piece()
-        # if (self._detection_count % self._detect_lines_every) == 0:
-        #     l = self._detect_lines_completed()
-        #     print(l)
-
         self._detection_count += 1
 
     def _detect_board(self):
@@ -93,17 +88,6 @@ class Detectorist:
                         self._next_piece = piece
                         return
         self._next_piece = None
-
-    def _detect_lines_completed(self):
-        lines_image = self.image[20:34, 150:178]
-        height, width = np.shape(lines_image)
-        lines_image = cv2.resize(
-            lines_image, dsize=(width * 2, height * 2), interpolation=cv2.INTER_LINEAR
-        )
-        cv2.imshow("Lines Image", lines_image)
-        custom_oem_psm_config = "-l eng --oem 1 --psm 7"
-        lines = pytesseract.image_to_string(lines_image, config=custom_oem_psm_config)
-        return lines.strip()
 
     def _find_current_piece(self) -> Tuple[Union[np.ndarray, None], int, int]:
         piece_array = np.empty((0, Board.columns), int)

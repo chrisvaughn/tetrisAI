@@ -73,7 +73,7 @@ class GameState:
 
         font = cv2.FONT_HERSHEY_SIMPLEX
         org = (block_size * 2, block_size * 2)
-        fontScale = 1
+        font_scale = 1
         color = (255, 255, 0)
         thickness = 2
 
@@ -82,7 +82,7 @@ class GameState:
             str(self._completed_lines),
             org,
             font,
-            fontScale,
+            font_scale,
             color,
             thickness,
             cv2.LINE_AA,

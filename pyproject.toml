@@ -10,7 +10,6 @@ numpy = "^1"
 opencv-python = "^4"
 pyobjc-framework-Quartz = "^8"
 mss = "^6"
-pytesseract = "^0.3"
 progressbar = "^2.5"
 applescript = "^2021"
 
