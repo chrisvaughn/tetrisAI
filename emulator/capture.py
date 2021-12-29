@@ -1,5 +1,5 @@
 import time
-from multiprocessing import Process, shared_memory
+from multiprocessing import Process, Queue, shared_memory
 
 import cv2
 import numpy as np
@@ -16,7 +16,11 @@ dtype = np.uint8
 
 
 def capture_latest_image_into_shared_memory(
-    fps, emulator_name, shared_mem, display_fps=False
+    fps,
+    emulator_name,
+    shared_mem,
+    queue,
+    display_fps=False,
 ):
     capturer = Capture(emulator_name, fps)
     capture_counter = 0
@@ -33,6 +37,7 @@ def capture_latest_image_into_shared_memory(
             img[:] = capturer.next_image[:]
         except TypeError:
             break
+        queue.put(True)
         # sleep for the remaining time to achieve the desired fps
         time.sleep(max(0, 1 / fps - (time.time() - capture_start_time)))
 
@@ -43,9 +48,10 @@ class CaptureController:
             create=True, size=shape[0] * shape[1] * dtype().itemsize
         )
         self.enabled = True
+        self.queue = Queue(1)
         self.process = Process(
             target=capture_latest_image_into_shared_memory,
-            args=(fps, emulator_name, self.shm, display_fps),
+            args=(fps, emulator_name, self.shm, self.queue, display_fps),
         )
         self.process.start()
 
@@ -55,7 +61,11 @@ class CaptureController:
         self.shm.close()
         self.shm.unlink()
 
+    def has_new_image(self):
+        return not self.queue.empty()
+
     def latest_image(self):
+        self.queue.get()
         return np.ndarray(shape, dtype=dtype, buffer=self.shm.buf)
 
 

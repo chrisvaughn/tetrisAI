@@ -19,6 +19,8 @@ piece_templates = {
     "o": cv2.imread(os.path.join(image_path, "o.png"), cv2.IMREAD_GRAYSCALE),
 }
 
+pixel_threshold_black = 40
+
 
 class Detectorist:
     def __init__(self, next_piece: int):
@@ -140,12 +142,8 @@ def _scan_image(num_rows: int, num_columns: int, image: np.ndarray) -> np.ndarra
                 round(block_width / 2) : round((block_width / 2) + 2),
             ]
 
-            # Calculates the mean GBR value from the set of pixels. Uses a set of pixels instead of a
-            # single pixel to account for potential issues caused by noise or blurring of a frame.
-            mean_gbr = np.array(cv2.mean(block_middle)[0:3])
-
-            # if mean gbr equals black it's the background
-            if np.array_equal(mean_gbr, np.array((0, 0, 0))):
+            # if all pixels are less than the threshold for black it's the background
+            if (block_middle < pixel_threshold_black).all():
                 narray[y][x] = 0
             else:
                 narray[y][x] = 1
