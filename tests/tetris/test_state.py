@@ -5,7 +5,8 @@ def test_I():
     board = Board()
     cp = Tetrominoes[0]
     cp.set_position(5, 1)
-    gs = GameState(board, cp, None)
+    gs = GameState()
+    gs.update(board, cp, None)
     assert gs.count_holes() == 0
     assert gs.cumulative_height() == 0
     assert gs.roughness() == 0
