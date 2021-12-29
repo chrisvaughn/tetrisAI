@@ -49,7 +49,7 @@ class Emulator:
             "move_down": "down",
         }
 
-        self.capturer = CaptureController(self.name)
+        self.capturer = CaptureController(self.name, 50, False)
         self.process = self.launch(limit_speed, music, level, sound)
 
     def move_to_key(self, move):

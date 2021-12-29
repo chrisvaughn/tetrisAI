@@ -21,18 +21,13 @@ piece_templates = {
 
 
 class Detectorist:
-    def __init__(self, image: np.ndarray, lines: int, next_piece: int):
-        self.image: np.ndarray = image
+    def __init__(self, next_piece: int):
+        self.image: Union[np.ndarray, None] = None
         self._board: Union[Board, None] = None
         self._current_piece: Union[Piece, None] = None
         self._next_piece: Union[Piece, None] = None
-        self._detect_lines_every = lines
         self._detect_next_piece_every = next_piece
         self._detection_count: int = 0
-        if np.shape(self.image) != (240, 256):
-            raise Exception("image needs to be 256x240 and gray scale")
-
-        self._detect()
 
     @property
     def board(self) -> Board:
@@ -61,6 +56,8 @@ class Detectorist:
         self._detection_count += 1
 
     def _detect_board(self):
+        if self.image is None:
+            raise Exception("image shouldn't be None")
         board_image = self.image[47:209, 95:176]
         # cv2.imshow("Board Image", board_image)
         board = _scan_image(20, 10, board_image)
@@ -78,6 +75,8 @@ class Detectorist:
                     return
 
     def _detect_next_piece(self):
+        if self.image is None:
+            raise Exception("image shouldn't be None")
         next_piece_image = self.image[111:144, 191:223]
         for name, template in piece_templates.items():
             res = cv2.matchTemplate(next_piece_image, template, cv2.TM_CCOEFF_NORMED)

@@ -15,17 +15,19 @@ shape = (240, 256)
 dtype = np.uint8
 
 
-def capture_latest_image_into_shared_memory(fps, emulator_name, shared_mem):
+def capture_latest_image_into_shared_memory(
+    fps, emulator_name, shared_mem, display_fps=False
+):
     capturer = Capture(emulator_name, fps)
     capture_counter = 0
-    # start_time = time.time()
+    start_time = time.time()
     img = np.ndarray(shape, dtype=dtype, buffer=shared_mem.buf)
     while True:
         capture_start_time = time.time()
         capture_counter += 1
-        # if capture_counter % 100 == 0:
-        #     actual_fps = capture_counter / (time.time() - start_time)
-        #     print(f"Capturing at {actual_fps:.2f} FPS")
+        if display_fps and capture_counter % 100 == 0:
+            actual_fps = capture_counter / (time.time() - start_time)
+            print(f"Capturing at {actual_fps:.2f} FPS")
         # copy the latest image into the shared memory
         try:
             img[:] = capturer.next_image[:]
@@ -36,18 +38,14 @@ def capture_latest_image_into_shared_memory(fps, emulator_name, shared_mem):
 
 
 class CaptureController:
-    def __init__(self, emulator_name, fps=50):
+    def __init__(self, emulator_name, fps=50, display_fps=False):
         self.shm = shared_memory.SharedMemory(
             create=True, size=shape[0] * shape[1] * dtype().itemsize
         )
         self.enabled = True
         self.process = Process(
             target=capture_latest_image_into_shared_memory,
-            args=(
-                fps,
-                emulator_name,
-                self.shm,
-            ),
+            args=(fps, emulator_name, self.shm, display_fps),
         )
         self.process.start()
 
@@ -69,7 +67,6 @@ class Capture:
     def __init__(self, emulator_name, fps=50):
         self.fps = fps
         self.emulator_name = emulator_name
-        self.capture_time = 1 / fps
         self.enabled = True
         self.location = None
         self.last_location_check = 0

@@ -8,7 +8,7 @@ import time
 import cv2
 
 from bot import Detectorist, Evaluator, defined_weights, get_pool
-from emulator import Emulator, capture
+from emulator import Emulator
 from tetris import Game, GameState
 
 
@@ -33,7 +33,7 @@ def main(args):
 
 def run_in_memory(args, weights):
     seed = args.seed
-    no_soft_drop = args.nodrop
+    soft_drop = args.drop
     move_count = 0
     drop_enabled = False
     move_sequence = []
@@ -64,40 +64,31 @@ def run_in_memory(args, weights):
                     getattr(game, move)()
             game.move_seq_complete()
             drop_enabled = True
-        elif drop_enabled and not no_soft_drop:
+        elif drop_enabled and soft_drop:
             game.move_down()
 
 
 def run_with_emulator(args, weights):
     emulator = Emulator(args.limit_speed, args.music, args.level, args.sound)
     soft_drop = args.drop
-    gs = None
     move_sequence = []
     move_count = 0
     lines_completed = 0
-    detector = None
+    gs = GameState(args.seed)
+    detector = Detectorist(5)
     aie = Evaluator(gs, weights)
     while True:
         screen = emulator.get_latest_image()
         if screen is None:
             print("No screen")
-        if detector is None:
-            detector = Detectorist(screen, 10, 5)
-        else:
-            detector.update(screen)
+        detector.update(screen)
         if detector.board.game_over():
             print("Game Over")
             print(f"Lines Completed: {lines_completed}")
             emulator.destroy()
             return
 
-        if not gs:
-            print("Building GameState")
-            gs = GameState(
-                detector.board, detector.current_piece, detector.next_piece, 0
-            )
-        else:
-            gs.update(detector.board, detector.current_piece, detector.next_piece)
+        gs.update(detector.board, detector.current_piece, detector.next_piece)
 
         if gs.new_piece():
             emulator.drop_off()
@@ -160,7 +151,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--music", action="store_true", default=False, help="play music"
     )
-    parser.add_argument("--level", default=18, type=int, help="level to start at")
+    parser.add_argument("--level", default=19, type=int, help="level to start at")
 
     args = parser.parse_args()
     main(args)

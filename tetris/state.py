@@ -1,5 +1,4 @@
 import copy
-import time
 from typing import Union
 
 import cv2
@@ -17,20 +16,14 @@ def nes_prng(value: int):
 
 
 class GameState:
-    def __init__(
-        self,
-        board: Board,
-        current_piece: Union[Piece, None] = None,
-        next_piece: Union[Piece, None] = None,
-        seed: int = time.time_ns(),
-    ):
-        self.board = board
-        self.current_piece = current_piece
-        self.next_piece = next_piece
-        self._last_piece: Union[Piece, None] = None
+    def __init__(self, seed: int = 0):
+        self.board: Union[Board, None] = None
+        self.current_piece: Union[Piece, None] = None
+        self.next_piece: Union[Piece, None] = None
+        self._last_piece_y: int = 0
         self._completed_lines: int = 0
         self._last_rn: int = seed
-        self._look_for_new_piece: bool = True
+        self._first_piece: bool = True
 
     def select_next_piece(self) -> Piece:
         value = nes_prng(self._last_rn)
@@ -39,7 +32,7 @@ class GameState:
         p.set_position(6, 1)
         return p
 
-    def display(self, in_bounds=False):
+    def display(self):
         block_size = 28
         virtual_board = np.zeros(
             (Board.rows * block_size, Board.columns * block_size, 3), dtype=np.uint8
@@ -92,23 +85,21 @@ class GameState:
 
     def update(self, board: Board, current_piece: Piece, next_piece: Piece = None):
         self.board = board
-        self._last_piece = self.current_piece
-        if current_piece is not None:
+        if self.current_piece:
+            self._last_piece_y = self.current_piece.zero_based_corner_xy[1]
+        if current_piece:
             self.current_piece = current_piece
-            _, y = self.current_piece.zero_based_corner_xy
-            if y > 0:
-                self._look_for_new_piece = True
         self.next_piece = next_piece
 
     def clone(self):
         return copy.deepcopy(self)
 
     def new_piece(self) -> bool:
-        if self._look_for_new_piece and self.current_piece:
-            _, y = self.current_piece.zero_based_corner_xy
-            if y < 1:
-                self._look_for_new_piece = False
-                return True
+        if self.current_piece and self._first_piece:
+            self._first_piece = False
+            return True
+        if self.current_piece:
+            return self.current_piece.zero_based_corner_xy[1] < self._last_piece_y
         return False
 
     def move_down(self, moves: int = 1):
