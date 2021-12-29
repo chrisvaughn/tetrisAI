@@ -81,6 +81,7 @@ def run_with_emulator(args, weights):
         screen = emulator.get_latest_image()
         if screen is None:
             time.sleep(0.1)
+            continue
         detector.update(screen)
         if detector.board.game_over():
             print("Game Over")
