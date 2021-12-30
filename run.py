@@ -75,12 +75,12 @@ def run_with_emulator(args, weights):
     move_count = 0
     lines_completed = 0
     gs = GameState(args.seed)
-    detector = Detectorist(5)
+    detector = Detectorist(100)
     aie = Evaluator(gs, weights)
     while True:
         screen = emulator.get_latest_image()
         if screen is None:
-            time.sleep(0.1)
+            time.sleep(0.01)
             continue
         detector.update(screen)
         if detector.board.game_over():

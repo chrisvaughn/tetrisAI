@@ -49,7 +49,7 @@ class Emulator:
             "move_down": "down",
         }
 
-        self.capturer = CaptureController(self.name, 50, False)
+        self.capturer = CaptureController(self.name, 60, False)
         self.process = self.launch(limit_speed, music, level, sound)
 
     def move_to_key(self, move):
@@ -67,7 +67,10 @@ class Emulator:
 
     def send_multiple_moves(self, moves):
         keys = [k for k in [self.move_to_key(move) for move in moves] if k is not None]
-        self.keyboard.simultaneous_key_press(keys, wait_min_before_press=True)
+        if len(keys) > 1:
+            self.keyboard.simultaneous_key_press(keys, wait_min_before_press=True)
+        elif len(keys) == 1:
+            self.keyboard.press_key(keys[0], wait_min_before_press=True)
 
     def drop_on(self):
         if not self.drop_keypress:

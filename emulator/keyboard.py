@@ -55,8 +55,8 @@ class KeyLog:
 class Keyboard:
     def __init__(self, pid: int, debug: bool = False):
         self.macos_detection_time = 0.02
-        self.emulator_detection_time = 0.03
-        self.min_time_between_key_presses = 0.04
+        self.emulator_detection_time = 1 / 60
+        self.min_time_between_key_presses = self.emulator_detection_time * 2
         self.source = CGEventSourceCreate(kCGEventSourceStateHIDSystemState)
         self.pid = pid
         self.last_keyup_time = 0.0

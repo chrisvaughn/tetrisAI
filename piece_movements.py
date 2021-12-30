@@ -9,7 +9,8 @@ def main():
         print(f"Piece: {t.name}")
         t.set_position(6, 10)
         board = Board()
-        gs = GameState(board, t, None)
+        gs = GameState()
+        gs.update(board, t)
         gs.display()
         cv2.waitKey(0)
 
