@@ -23,14 +23,14 @@ line_gen9 = Weights(
 )
 
 score = Weights(
-    holes=-1,
-    roughness=-1,
-    lines=1.0,
-    relative_height=-1,
-    absolute_height=1,
-    cumulative_height=-1,
-    well_count=-1,
-    movements_required=-1,
+    holes=-0.5420731032199297,
+    roughness=-0.2818901223532991,
+    lines=-0.21098533340663872,
+    relative_height=-0.6612080985847091,
+    absolute_height=0.03604460524601438,
+    cumulative_height=-0.9971316083556583,
+    well_count=0.2696747106029156,
+    movements_required=0.04788097355665538,
 )
 
 by_mode = {
