@@ -8,7 +8,6 @@ import time
 import cv2
 
 from bot import Detectorist, Evaluator, defined_weights, get_pool
-from emulator import Emulator
 from tetris import Game, GameState
 
 
@@ -67,8 +66,13 @@ def run_in_memory(args, weights):
         elif drop_enabled and soft_drop:
             game.move_down()
 
+    print("Game Over")
+    print(f"Lines Completed: {game.lines}")
+
 
 def run_with_emulator(args, weights):
+    from emulator import Emulator
+
     emulator = Emulator(args.limit_speed, args.music, args.level, args.sound)
     soft_drop = args.drop
     move_sequence = []
