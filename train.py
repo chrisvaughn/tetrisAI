@@ -12,16 +12,29 @@ def main(args):
     if args.no_parallel:
         run_evaluator_in_parallel = False
     get_pool()
-    ga = GA(100, 15, avg_of)
+    fitness_methods = {
+        "score": avg_of_scores,
+        "lines": avg_of_lines,
+    }
+    filename = f"save_{args.fitness_method}.pkl"
+    ga = GA(100, 15, fitness_methods[args.fitness_method], filename)
     best = ga.run(resume=True)
     print("All Done")
     print(best)
 
 
-def avg_of(weights, num=10):
+def avg_of_scores(weights, num=10):
     results = []
     for i in range(num):
-        lines = evaluate(weights, run_evaluator_in_parallel)
+        lines, score = evaluate(weights, run_evaluator_in_parallel)
+        results.append(score)
+    return sum(results) / len(results)
+
+
+def avg_of_lines(weights, num=10):
+    results = []
+    for i in range(num):
+        lines, score = evaluate(weights, run_evaluator_in_parallel)
         results.append(lines)
     return sum(results) / len(results)
 
@@ -51,7 +64,7 @@ def evaluate(weights: Weights, parallel: bool = True):
         elif drop_enabled:
             game.move_down()
 
-    return game.lines
+    return game.lines, game.score
 
 
 if __name__ == "__main__":
@@ -62,6 +75,13 @@ if __name__ == "__main__":
         action="store_true",
         default=False,
         help="do not run evaluator in parallel",
+    )
+    parser.add_argument(
+        "--fitness",
+        dest="fitness_method",
+        default="lines",
+        choices=["lines", "score"],
+        help="fitness method",
     )
     args = parser.parse_args()
     main(args)

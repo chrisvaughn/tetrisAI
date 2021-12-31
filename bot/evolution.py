@@ -27,7 +27,7 @@ class GA:
         population_size: int,
         generations: int,
         fitness: Callable,
-        save_file: str = "save.pkl",
+        save_file: str,
     ):
         self.population_size = population_size
         self.generations = generations

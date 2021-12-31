@@ -69,7 +69,12 @@ def execute_move(state: GameState, rot: int, trans: int):
 
 
 class Evaluator:
-    def __init__(self, state: GameState, weights: Weights, parallel: bool = True):
+    def __init__(
+        self,
+        state: GameState,
+        weights: Weights,
+        parallel: bool = True,
+    ):
         self._initial_state = state
         self._weights = weights
         self.parallel = parallel

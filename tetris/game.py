@@ -38,6 +38,8 @@ frames_per_cell_by_level = {
     29: 1,
 }
 
+score_by_number_of_lines_cleared = [40, 100, 300, 1200]
+
 
 class Game:
     def __init__(self, seed=int(time.time() * 1000), level=19):
@@ -50,6 +52,7 @@ class Game:
         self.piece_count = 0
         self.game_thread = threading.Thread(target=self.run)
         self.state.board = Board()
+        self.score = 0
 
     def start(self):
         self.game_thread.start()
@@ -75,7 +78,10 @@ class Game:
                 if self.game_over:
                     return self.lines
                 else:
-                    self.lines += self.state.check_full_lines()
+                    lines = self.state.check_full_lines()
+                    if lines > 0:
+                        self.lines += lines
+                        self.score += score_by_number_of_lines_cleared[lines - 1]
                     cp = self.state.select_next_piece()
                     self.state_lock.acquire()
                     self.state.update(self.state.board, cp)

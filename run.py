@@ -11,18 +11,19 @@ from bot import Detectorist, Evaluator, defined_weights, get_pool
 from tetris import Game, GameState
 
 
-def get_weights(use_save=True):
-    if use_save and os.path.isfile("save.pkl"):
-        with open("save.pkl", "rb") as f:
+def get_weights(mode, use_save=True):
+    if use_save and os.path.isfile(f"save_{mode}.pkl"):
+        with open(f"save_{mode}.pkl", "rb") as f:
             saved = pickle.load(f)
             return saved.genomes[0].weights
-    return defined_weights.best
+    print(f"Getting weights for mode: {mode}")
+    return defined_weights.by_mode[mode]
 
 
 def main(args):
     # init evaluation pool
     get_pool()
-    weights = get_weights(args.saved)
+    weights = get_weights(args.mode, args.saved)
     print(f"{weights}")
     if args.emulator:
         run_with_emulator(args, weights)
@@ -157,6 +158,12 @@ if __name__ == "__main__":
         "--music", action="store_true", default=False, help="play music"
     )
     parser.add_argument("--level", default=19, type=int, help="level to start at")
+    parser.add_argument(
+        "--mode",
+        default="lines",
+        choices=["lines", "score"],
+        help="play for lines or for score",
+    )
 
     args = parser.parse_args()
     main(args)
