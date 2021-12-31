@@ -11,7 +11,7 @@ hand_tuned = Weights(
     movements_required=0,
 )
 
-gen9 = Weights(
+line_gen9 = Weights(
     holes=-1.7996452185203657,
     roughness=-0.586362164198158,
     lines=1.543429682851114,
@@ -22,4 +22,18 @@ gen9 = Weights(
     movements_required=0,
 )
 
-best = gen9
+score = Weights(
+    holes=-1,
+    roughness=-1,
+    lines=1.0,
+    relative_height=-1,
+    absolute_height=1,
+    cumulative_height=-1,
+    well_count=-1,
+    movements_required=-1,
+)
+
+by_mode = {
+    "lines": line_gen9,
+    "score": score,
+}
