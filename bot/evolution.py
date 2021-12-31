@@ -43,13 +43,14 @@ class GA:
         for i in range(self.population_size):
             genome = Genome(
                 weights=Weights(
-                    holes=random.uniform(-2, 2),
-                    roughness=random.uniform(-2, 2),
-                    lines=random.uniform(-2, 2),
-                    relative_height=random.uniform(-2, 2),
-                    absolute_height=random.uniform(-2, 2),
-                    cumulative_height=random.uniform(-2, 2),
-                    well_count=random.uniform(-2, 2),
+                    holes=random.uniform(-1, 1),
+                    roughness=random.uniform(-1, 1),
+                    lines=random.uniform(-1, 1),
+                    relative_height=random.uniform(-1, 1),
+                    absolute_height=random.uniform(-1, 1),
+                    cumulative_height=random.uniform(-1, 1),
+                    well_count=random.uniform(-1, 1),
+                    movements_required=random.uniform(-1, 1),
                 ),
                 fitness=0.0,
             )

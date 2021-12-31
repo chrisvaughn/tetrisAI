@@ -4,8 +4,13 @@ import argparse
 from bot import GA, Evaluator, Weights, get_pool
 from tetris import Game
 
+run_evaluator_in_parallel = True
 
-def main():
+
+def main(args):
+    global run_evaluator_in_parallel
+    if args.no_parallel:
+        run_evaluator_in_parallel = False
     get_pool()
     ga = GA(100, 15, avg_of)
     best = ga.run(resume=True)
@@ -16,14 +21,14 @@ def main():
 def avg_of(weights, num=10):
     results = []
     for i in range(num):
-        lines = evaluate(weights)
+        lines = evaluate(weights, run_evaluator_in_parallel)
         results.append(lines)
     return sum(results) / len(results)
 
 
-def evaluate(weights: Weights):
-    game = Game()
-    aie = Evaluator(game.state, weights)
+def evaluate(weights: Weights, parallel: bool = True):
+    game = Game(level=19)
+    aie = Evaluator(game.state, weights, parallel)
     drop_enabled = False
     move_count = 0
     move_sequence = []
@@ -51,5 +56,12 @@ def evaluate(weights: Weights):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="train a tetris bot")
+    parser.add_argument(
+        "--no-parallel",
+        dest="no_parallel",
+        action="store_true",
+        default=False,
+        help="do not run evaluator in parallel",
+    )
     args = parser.parse_args()
-    main()
+    main(args)

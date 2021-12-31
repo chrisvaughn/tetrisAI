@@ -8,10 +8,14 @@ authors = ["Chris Vaughn <chris@cvaughn.com>"]
 python = ">=3.9,<3.11"
 numpy = "^1"
 opencv-python = "^4"
-pyobjc-framework-Quartz = "^8"
-mss = "^6"
 progressbar = "^2.5"
-applescript = "^2021"
+
+pyobjc-framework-Quartz = { version = "^8", optional = true }
+mss = { version = "^6", optional = true }
+applescript = { version = "^2021", optional = true }
+
+[tool.poetry.extras]
+macOS = ["pyobjc-framework-Quartz", "mss", "applescript"]
 
 [tool.poetry.dev-dependencies]
 black = "^21.5b2"

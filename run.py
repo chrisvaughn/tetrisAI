@@ -37,7 +37,7 @@ def run_in_memory(args, weights):
     move_count = 0
     drop_enabled = False
     move_sequence = []
-    game = Game(seed)
+    game = Game(seed, args.level)
     game.display()
     aie = Evaluator(game.state, weights)
     game.start()
