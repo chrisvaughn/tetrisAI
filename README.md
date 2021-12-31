@@ -1,7 +1,5 @@
 # tetrisAI
 
-#python 3.9
-
 ```
 export py_version=3.9.9
 pyenv install $py_version --skip-existing
@@ -10,7 +8,13 @@ pyenv virtualenv $py_version tetrisAI
 pyenv local tetrisAI
 ```
 
-Get dependencies
+
+Get dependencies on macOS for running the AI with an emulator:
+```
+poetry install -E macOS
+```
+
+Get dependencies on linux for training the bot
 ```
 poetry install
 ```

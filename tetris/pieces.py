@@ -17,7 +17,7 @@ class Piece:
         self._detection_shapes = None
 
     def __str__(self) -> str:
-        return f"Piece<name: {self.name}, x: {self._x}, y: {self._y}>"
+        return f"Piece<name: {self.name}, x: {self._x}, y: {self._y}, rotation: {self.current_shape_idx}>"
 
     @property
     def shape(self) -> np.ndarray:

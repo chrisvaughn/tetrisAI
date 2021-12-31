@@ -196,10 +196,14 @@ class GameState:
         px, py = self.current_piece.zero_based_corner_xy
         for (y, x), value in np.ndenumerate(self.current_piece.shape):
             if value != 0:
-                self.board.board[
-                    py + y,
-                    px + x,
-                ] = value
+                try:
+                    self.board.board[
+                        py + y,
+                        px + x,
+                    ] = value
+                except IndexError as e:
+                    print(self.current_piece)
+                    raise e
         self.board.updated()
 
     def check_game_over(self):

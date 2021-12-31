@@ -4,15 +4,47 @@ import time
 from .board import Board
 from .state import GameState
 
+# frames per cell in original NES Tetris
+frames_per_cell_by_level = {
+    0: 48,
+    1: 43,
+    2: 38,
+    3: 33,
+    4: 28,
+    5: 23,
+    6: 18,
+    7: 13,
+    8: 8,
+    9: 6,
+    10: 5,
+    11: 5,
+    12: 5,
+    13: 4,
+    14: 4,
+    15: 4,
+    16: 3,
+    17: 3,
+    18: 3,
+    19: 2,
+    20: 2,
+    21: 2,
+    22: 2,
+    23: 2,
+    24: 2,
+    25: 2,
+    26: 2,
+    27: 2,
+    28: 2,
+    29: 1,
+}
+
 
 class Game:
-    def __init__(self, seed):
-        if seed:
-            self.state = GameState(seed)
-        else:
-            self.state = GameState(int(time.time()))
+    def __init__(self, seed=int(time.time() * 1000), level=19):
+        self.state = GameState(seed)
         self.state_lock = threading.Lock()
-        self.gravity = 10
+        self.frames_per_cell = frames_per_cell_by_level[level]
+        self.framerate = 1 / 60
         self.game_over = False
         self.lines = 0
         self.piece_count = 0
@@ -33,7 +65,7 @@ class Game:
         self.piece_count += 1
         time.sleep(1)
         while not self.game_over:
-            time.sleep(1 / self.gravity)
+            frame_start = time.time()
             self.state_lock.acquire()
             moved_down = self.state.move_down()
             self.state.update(self.state.board, cp)
@@ -49,6 +81,12 @@ class Game:
                     self.state.update(self.state.board, cp)
                     self.state_lock.release()
                     self.piece_count += 1
+            time.sleep(
+                max(
+                    0,
+                    self.framerate * self.frames_per_cell - (time.time() - frame_start),
+                )
+            )
 
     def move_down(self, moves: int = 1) -> bool:
         self.state_lock.acquire()

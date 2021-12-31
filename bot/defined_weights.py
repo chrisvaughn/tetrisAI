@@ -8,6 +8,7 @@ hand_tuned = Weights(
     absolute_height=-0.8,
     cumulative_height=-0.5,
     well_count=0,
+    movements_required=0,
 )
 
 gen9 = Weights(
@@ -18,6 +19,7 @@ gen9 = Weights(
     absolute_height=0.14184787008854816,
     cumulative_height=-1.974187965195153,
     well_count=-1.9673957577507517,
+    movements_required=0,
 )
 
 best = gen9

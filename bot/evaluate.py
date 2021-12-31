@@ -17,6 +17,7 @@ class Weights:
     absolute_height: float = 0
     cumulative_height: float = 0
     well_count: float = 0
+    movements_required: float = 0
 
 
 @dataclass
@@ -68,9 +69,10 @@ def execute_move(state: GameState, rot: int, trans: int):
 
 
 class Evaluator:
-    def __init__(self, state: GameState, weights: Weights):
+    def __init__(self, state: GameState, weights: Weights, parallel: bool = True):
         self._initial_state = state
         self._weights = weights
+        self.parallel = parallel
 
     def update_state(self, state: GameState):
         self._initial_state = state
@@ -81,7 +83,7 @@ class Evaluator:
     def execute_and_score(self, p: Tuple[int, int]) -> Move:
         state = self._initial_state.clone()
         execute_move(state, p[0], p[1])
-        score, parameters = self.scoring_v1(state)
+        score, parameters = self.scoring_v1(state, p)
         move = Move(
             p[0],
             p[1],
@@ -92,7 +94,9 @@ class Evaluator:
         )
         return move
 
-    def scoring_v1(self, state: GameState) -> Tuple[float, dict]:
+    def scoring_v1(
+        self, state: GameState, movements_required: Tuple[int, int]
+    ) -> Tuple[float, dict]:
         values = {
             "holes": state.count_holes(),
             "roughness": state.roughness(),
@@ -101,6 +105,7 @@ class Evaluator:
             "absolute_height": state.absolute_height(),
             "cumulative_height": state.cumulative_height(),
             "well_count": state.well_count(),
+            "movements_required": sum(movements_required),
         }
         score = 0
         for k in values.keys():
@@ -119,13 +124,14 @@ class Evaluator:
             for t in range(-l, r + 1):
                 options.append((rot, t))
 
-        imoves = get_pool().imap_unordered(self.execute_and_score, options)
-        for m in imoves:
-            possible_moves.append(m)
-
-        # for option in options:
-        #     move = self.execute_and_score(option)
-        #     possible_moves.append(move)
+        if self.parallel:
+            imoves = get_pool().imap_unordered(self.execute_and_score, options)
+            for m in imoves:
+                possible_moves.append(m)
+        else:
+            for option in options:
+                move = self.execute_and_score(option)
+                possible_moves.append(move)
 
         return possible_moves
 
