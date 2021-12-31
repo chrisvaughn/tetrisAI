@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from itertools import zip_longest
 from typing import List, Tuple, Union
 
-from tetris import GameState
+from tetris import GameState, InvalidMove
 
 from .evaluation_pool import get_pool
 
@@ -80,9 +80,13 @@ class Evaluator:
     def update_weights(self, weights: Weights):
         self._weights = weights
 
-    def execute_and_score(self, p: Tuple[int, int]) -> Move:
+    def execute_and_score(self, p: Tuple[int, int]) -> Union[Move, None]:
         state = self._initial_state.clone()
-        execute_move(state, p[0], p[1])
+        try:
+            execute_move(state, p[0], p[1])
+        except InvalidMove:
+            return None
+
         score, parameters = self.scoring_v1(state, p)
         move = Move(
             p[0],
@@ -127,11 +131,13 @@ class Evaluator:
         if self.parallel:
             imoves = get_pool().imap_unordered(self.execute_and_score, options)
             for m in imoves:
-                possible_moves.append(m)
+                if m is not None:
+                    possible_moves.append(m)
         else:
             for option in options:
                 move = self.execute_and_score(option)
-                possible_moves.append(move)
+                if move is not None:
+                    possible_moves.append(move)
 
         return possible_moves
 

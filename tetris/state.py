@@ -8,6 +8,14 @@ from .board import Board
 from .pieces import Piece, Tetrominoes
 
 
+class InvalidMove(Exception):
+    def __init__(self, piece: Piece):
+        self.piece = piece
+
+    def __str__(self):
+        return f"Invalid move: {self.piece}"
+
+
 def nes_prng(value: int):
     bit1 = (value >> 1) & 1
     bit9 = (value >> 9) & 1
@@ -201,9 +209,9 @@ class GameState:
                         py + y,
                         px + x,
                     ] = value
-                except IndexError as e:
-                    print(self.current_piece)
-                    raise e
+                except IndexError:
+                    raise InvalidMove(self.current_piece)
+
         self.board.updated()
 
     def check_game_over(self):
