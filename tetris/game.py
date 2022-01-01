@@ -81,7 +81,8 @@ class Game:
                     lines = self.state.check_full_lines()
                     if lines > 0:
                         self.lines += lines
-                        self.score += score_by_number_of_lines_cleared[lines - 1]
+                        if lines <= len(score_by_number_of_lines_cleared):
+                            self.score += score_by_number_of_lines_cleared[lines - 1]
                     cp = self.state.select_next_piece()
                     self.state_lock.acquire()
                     self.state.update(self.state.board, cp)
