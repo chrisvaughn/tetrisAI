@@ -115,7 +115,9 @@ class Evaluator:
             "absolute_height": state.absolute_height(),
             "cumulative_height": state.cumulative_height(),
             "well_count": state.well_count(),
-            "movements_required": sum(movements_required),
+            "movements_required": abs(
+                movements_required[1]
+            ),  # only care about absolute value of translation
         }
         score = 0
         for k in values.keys():

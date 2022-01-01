@@ -1,5 +1,6 @@
 import threading
 import time
+from collections import Counter
 
 from .board import Board
 from .state import GameState
@@ -53,6 +54,7 @@ class Game:
         self.game_thread = threading.Thread(target=self.run)
         self.state.board = Board()
         self.score = 0
+        self.piece_stats = Counter()
 
     def start(self):
         self.game_thread.start()
@@ -62,6 +64,7 @@ class Game:
 
     def run(self) -> int:
         cp = self.state.select_next_piece()
+        self.piece_stats[cp.name] += 1
         self.state_lock.acquire()
         self.state.update(self.state.board, cp)
         self.state_lock.release()
@@ -84,6 +87,7 @@ class Game:
                         if lines <= len(score_by_number_of_lines_cleared):
                             self.score += score_by_number_of_lines_cleared[lines - 1]
                     cp = self.state.select_next_piece()
+                    self.piece_stats[cp.name] += 1
                     self.state_lock.acquire()
                     self.state.update(self.state.board, cp)
                     self.state_lock.release()

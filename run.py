@@ -69,6 +69,7 @@ def run_in_memory(args, weights):
 
     print("Game Over")
     print(f"Lines Completed: {game.lines}")
+    print(f"Piece Stats: {game.piece_stats.most_common(7)}")
 
 
 def run_with_emulator(args, weights):
