@@ -4,11 +4,12 @@ import argparse
 import os
 import pickle
 import time
+from collections import Counter
 
 import cv2
 
 from bot import Detectorist, Evaluator, defined_weights, get_pool
-from tetris import Game, GameState
+from tetris import Game, GameState, Tetrominoes
 
 
 def get_weights(mode, use_save=True):
@@ -18,6 +19,16 @@ def get_weights(mode, use_save=True):
             return saved.genomes[0].weights
     print(f"Getting weights for mode: {mode}")
     return defined_weights.by_mode[mode]
+
+
+def print_final_stats(lines: int, piece_stats: Counter, combos: Counter):
+    print(f"Lines Completed: {lines}")
+    print(f"Piece Stats: Total {sum(piece_stats.values())}")
+    for piece in Tetrominoes:
+        print(f"\t{piece.name.upper()}: {piece_stats[piece.name]}")
+    print("Line Combos:")
+    for i in range(1, 5):
+        print(f"\t{i}: {combos[i]}")
 
 
 def main(args):
@@ -68,8 +79,7 @@ def run_in_memory(args, weights):
             game.move_down()
 
     print("Game Over")
-    print(f"Lines Completed: {game.lines}")
-    print(f"Piece Stats: {game.piece_stats.most_common(7)}")
+    print_final_stats(game.lines, game.piece_stats, game.line_combos)
 
 
 def run_with_emulator(args, weights):
@@ -80,6 +90,8 @@ def run_with_emulator(args, weights):
     move_sequence = []
     move_count = 0
     lines_completed = 0
+    line_combos = Counter()
+    piece_stats = Counter()
     gs = GameState(args.seed)
     detector = Detectorist(100)
     aie = Evaluator(gs, weights)
@@ -90,10 +102,7 @@ def run_with_emulator(args, weights):
             continue
         detector.update(screen)
         if detector.board.game_over():
-            print("Game Over")
-            print(f"Lines Completed: {lines_completed}")
-            emulator.destroy()
-            return
+            break
 
         gs.update(detector.board, detector.current_piece, detector.next_piece)
 
@@ -102,7 +111,7 @@ def run_with_emulator(args, weights):
             move_count += 1
             aie.update_state(gs)
             best_move, time_taken, moves_considered = aie.best_move()
-
+            piece_stats[gs.current_piece.name] += 1
             move_sequence = best_move.to_sequence()
             if args.stats:
                 print(
@@ -110,7 +119,9 @@ def run_with_emulator(args, weights):
                 )
                 print(f"\tSequence: {move_sequence}")
             if best_move.lines_completed:
-                lines_completed += best_move.lines_completed
+                lines = best_move.lines_completed
+                line_combos[lines] += 1
+                lines_completed += lines
 
         while move_sequence:
             moves = move_sequence.pop(0)
@@ -118,6 +129,10 @@ def run_with_emulator(args, weights):
 
         if soft_drop:
             emulator.drop_on()
+
+    print("Game Over")
+    print_final_stats(lines_completed, piece_stats, line_combos)
+    emulator.destroy()
 
 
 if __name__ == "__main__":
