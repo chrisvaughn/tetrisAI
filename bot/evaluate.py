@@ -90,6 +90,7 @@ class Evaluator:
         try:
             execute_move(state, p[0], p[1])
         except InvalidMove:
+            print(f"Invalid move {p} for piece { state.current_piece}")
             return None
 
         score, parameters = self.scoring_v1(state, p)

@@ -36,7 +36,7 @@ class GameState:
     def select_next_piece(self) -> Piece:
         value = nes_prng(self._last_rn)
         self._last_rn = value
-        p = Tetrominoes[value % len(Tetrominoes)]
+        p = Tetrominoes[value % len(Tetrominoes)].clone()
         p.set_position(6, 1)
         return p
 
