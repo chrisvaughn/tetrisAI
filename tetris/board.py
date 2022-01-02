@@ -17,6 +17,9 @@ class Board:
     def clone(self):
         return copy.deepcopy(self)
 
+    def compare(self, other: "Board") -> bool:
+        return np.array_equal(self.board, other.board)
+
     def print(self):
         print("-" * 12)
         for y in self.board:
