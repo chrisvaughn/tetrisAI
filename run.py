@@ -93,7 +93,7 @@ def run_with_emulator(args, weights):
     line_combos = Counter()
     piece_stats = Counter()
     gs = GameState(args.seed)
-    detector = Detectorist(100)
+    detector = Detectorist()
     aie = Evaluator(gs, weights)
     while True:
         screen = emulator.get_latest_image()
@@ -107,6 +107,8 @@ def run_with_emulator(args, weights):
         gs.update(detector.board, detector.current_piece, detector.next_piece)
 
         if gs.new_piece():
+            next_piece = detector.detect_next_piece()
+            print(f"New Next Piece: {next_piece.name}")
             emulator.drop_off()
             move_count += 1
             aie.update_state(gs)

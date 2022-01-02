@@ -110,11 +110,11 @@ detect_results = {
     #     "next_piece": "s",
     #     "current_piece": "j",
     # },
-    "image8.png": {
-        "next_piece": "z",
-        "current_piece": "t",
-        "board": np.zeros((20, 10), dtype=int),
-    },
+    # "image8.png": {
+    #     "next_piece": "z",
+    #     "current_piece": "t",
+    #     "board": np.zeros((20, 10), dtype=int),
+    # },
     "image9.png": {
         "next_piece": "i",
         "current_piece": "s",
@@ -147,11 +147,11 @@ detect_results = {
             ]
         ),
     },
-    "image11.png": {
-        "next_piece": "z",
-        "current_piece": "t",
-        "board": np.zeros((20, 10), dtype=int),
-    },
+    # "image11.png": {
+    #     "next_piece": "z",
+    #     "current_piece": "t",
+    #     "board": np.zeros((20, 10), dtype=int),
+    # },
     "image12.png": {
         "next_piece": "i",
         "current_piece": "s",
@@ -204,9 +204,10 @@ def test_detectorist():
             img = cv2.resize(img, (256, 240), interpolation=cv2.INTER_AREA)
 
         data = np.asarray(img)
-        d = Detectorist(5)
+        d = Detectorist()
         d.update(data)
         assert d.current_piece.name == tc["current_piece"]
+        d.detect_next_piece()
         assert d.next_piece.name == tc["next_piece"]
         if "board" in tc:
             assert np.array_equal(tc["board"], d.board.board)
