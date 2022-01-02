@@ -15,6 +15,7 @@ class Piece:
         self._y = 0  # the center of the shape matrix
         self.current_shape_idx = default_shape_idx
         self._detection_shapes = None
+        self._next_piece_detection_shape = None
 
     def __str__(self) -> str:
         return f"Piece<name: {self.name}, x: {self._x}, y: {self._y}, rotation: {self.current_shape_idx}>"
@@ -88,6 +89,20 @@ class Piece:
             ds.append(pruned)
         self._detection_shapes = ds
         return self._detection_shapes
+
+    @property
+    def next_piece_detection_shape(self) -> np.ndarray:
+        if self._next_piece_detection_shape is not None:
+            return self._next_piece_detection_shape
+
+        s = self.shapes[self.default_shape_idx]
+        where = np.where(s == 1)
+        pruned = s[
+            np.amin(where[0]) : np.amax(where[0]) + 1,
+            np.amin(where[1]) : np.amax(where[1]) + 1,
+        ]
+        self._next_piece_detection_shape = pruned
+        return self._next_piece_detection_shape
 
 
 Tetrominoes = [

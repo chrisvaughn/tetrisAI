@@ -5,7 +5,6 @@ import time
 import applescript
 import cv2
 
-from bot.detect import image_path
 from emulator.capture import CaptureController
 from emulator.keyboard import Keyboard
 
@@ -14,6 +13,8 @@ EMULATOR_PATH = "/Applications/Nestopia.app/Contents/MacOS/Nestopia"
 ROM_PATH = "../ROMS/Tetris.nes"
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
+
+image_path = os.path.join(dir_path, "templates")
 
 
 def enter_speed_cheat():

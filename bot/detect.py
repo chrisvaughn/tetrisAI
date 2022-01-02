@@ -1,34 +1,18 @@
-import os
 from typing import Tuple, Union
 
-import cv2
 import numpy as np
 
 from tetris import Board, Piece, Tetrominoes
-
-cur_dir = os.path.dirname(os.path.abspath(__file__))
-
-image_path = os.path.join(cur_dir, "templates")
-piece_templates = {
-    "t": cv2.imread(os.path.join(image_path, "t.png"), cv2.IMREAD_GRAYSCALE),
-    "i": cv2.imread(os.path.join(image_path, "i.png"), cv2.IMREAD_GRAYSCALE),
-    "z": cv2.imread(os.path.join(image_path, "z.png"), cv2.IMREAD_GRAYSCALE),
-    "s": cv2.imread(os.path.join(image_path, "s.png"), cv2.IMREAD_GRAYSCALE),
-    "l": cv2.imread(os.path.join(image_path, "l.png"), cv2.IMREAD_GRAYSCALE),
-    "j": cv2.imread(os.path.join(image_path, "j.png"), cv2.IMREAD_GRAYSCALE),
-    "o": cv2.imread(os.path.join(image_path, "o.png"), cv2.IMREAD_GRAYSCALE),
-}
 
 pixel_threshold_black = 40
 
 
 class Detectorist:
-    def __init__(self, next_piece: int):
+    def __init__(self):
         self.image: Union[np.ndarray, None] = None
         self._board: Union[Board, None] = None
         self._current_piece: Union[Piece, None] = None
         self._next_piece: Union[Piece, None] = None
-        self._detect_next_piece_every = next_piece
         self._detection_count: int = 0
 
     @property
@@ -53,8 +37,6 @@ class Detectorist:
     def _detect(self):
         self._detect_board()
         self._detect_current_piece()
-        if (self._detection_count % self._detect_next_piece_every) == 0:
-            self._detect_next_piece()
         self._detection_count += 1
 
     def _detect_board(self):
@@ -76,19 +58,19 @@ class Detectorist:
                     self._current_piece.set_detected_position(at_x, at_y, i)
                     return
 
-    def _detect_next_piece(self):
+    def detect_next_piece(self):
         if self.image is None:
             raise Exception("image shouldn't be None")
-        next_piece_image = self.image[111:144, 191:223]
-        for name, template in piece_templates.items():
-            res = cv2.matchTemplate(next_piece_image, template, cv2.TM_CCOEFF_NORMED)
-            min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
-            if max_val > 0.9:
-                for piece in Tetrominoes:
-                    if piece.name == name:
-                        self._next_piece = piece
-                        return
-        self._next_piece = None
+        next_piece_image = self.image[111:143, 191:223]
+        next_piece_arr = _scan_image(4, 4, next_piece_image)
+        next_piece_arr, _ = _prune_piece_array(next_piece_arr)
+        next_piece = None
+        for piece in Tetrominoes:
+            if np.array_equal(next_piece_arr, piece.next_piece_detection_shape):
+                next_piece = piece.clone()
+                break
+        self._next_piece = next_piece
+        return next_piece
 
     def _find_current_piece(self) -> Tuple[Union[np.ndarray, None], int, int]:
         piece_array = np.empty((0, Board.columns), int)
@@ -112,6 +94,8 @@ class Detectorist:
 
 def _prune_piece_array(piece_array: np.ndarray) -> Tuple[np.ndarray, int]:
     where = np.where(piece_array == 1)
+    if len(where[0]) == 0:
+        return None, 0
     at_x = np.amin(where[1])
     pruned = piece_array[
         np.amin(where[0]) : np.amax(where[0]) + 1,
