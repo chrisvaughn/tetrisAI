@@ -108,7 +108,8 @@ def run_with_emulator(args, weights):
 
         if gs.new_piece():
             next_piece = detector.detect_next_piece()
-            print(f"New Next Piece: {next_piece.name}")
+            if args.stats and next_piece is not None:
+                print(f"New Next Piece: {next_piece.name}")
             emulator.drop_off()
             move_count += 1
             aie.update_state(gs)
