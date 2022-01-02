@@ -28,6 +28,7 @@ class Move:
     score_parameters: dict
     final_state: Union[GameState, None]
     lines_completed: int
+    end_state: GameState
 
     def to_sequence(self) -> List[Tuple[str]]:
         rotations = []
@@ -95,12 +96,7 @@ class Evaluator:
 
         score, parameters = self.scoring_v1(state, p)
         move = Move(
-            p[0],
-            p[1],
-            score,
-            parameters,
-            None,
-            parameters["values"]["lines"],
+            p[0], p[1], score, parameters, None, parameters["values"]["lines"], state
         )
         return move
 

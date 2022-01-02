@@ -5,6 +5,7 @@ import os
 import pickle
 import time
 from collections import Counter
+from typing import Union
 
 import cv2
 
@@ -92,9 +93,14 @@ def run_with_emulator(args, weights):
     lines_completed = 0
     line_combos = Counter()
     piece_stats = Counter()
+
     gs = GameState(args.seed)
     detector = Detectorist()
     aie = Evaluator(gs, weights)
+
+    expected_state: Union[GameState, None] = None
+    move_sequence_executed = False
+    next_best_move, next_time_taken, next_moves_considered = None, None, None
     while True:
         screen = emulator.get_latest_image()
         if screen is None:
@@ -105,17 +111,36 @@ def run_with_emulator(args, weights):
             break
 
         gs.update(detector.board, detector.current_piece, detector.next_piece)
-
         if gs.new_piece():
-            next_piece = detector.detect_next_piece()
-            if args.stats and next_piece is not None:
-                print(f"New Next Piece: {next_piece.name}")
+            if (
+                expected_state
+                and not gs.board.compare(expected_state.board)
+                or next_best_move is None
+            ):
+                if args.debug:
+                    print("Board state not the same")
+                    print("Expected:")
+                    expected_state.board.print()
+                    print("Actual:")
+                    gs.board.print()
+                    print("\n")
+                # re-plan best move with current board state
+                print("Re-planning best move")
+                aie.update_state(gs)
+                best_move, time_taken, moves_considered = aie.best_move()
+            else:
+                best_move, time_taken, moves_considered = (
+                    next_best_move,
+                    next_time_taken,
+                    next_moves_considered,
+                )
+
+            move_sequence_executed = False
             emulator.drop_off()
             move_count += 1
-            aie.update_state(gs)
-            best_move, time_taken, moves_considered = aie.best_move()
             piece_stats[gs.current_piece.name] += 1
             move_sequence = best_move.to_sequence()
+            expected_state = best_move.end_state.clone()
             if args.stats:
                 print(
                     f"Move {move_count}: Piece: {gs.current_piece.name}, Considered {moves_considered} moves in {int(time_taken * 1000)} ms."
@@ -125,7 +150,21 @@ def run_with_emulator(args, weights):
                 lines = best_move.lines_completed
                 line_combos[lines] += 1
                 lines_completed += lines
+        elif move_sequence_executed and next_best_move is None:
+            # we can plan the next move based on the expected board state and the next piece
+            next_piece = detector.detect_next_piece()
+            # use best move computed with "next piece" and expected board state
+            next_piece_gs = GameState()
+            next_piece.set_position(6, 1)
+            next_piece_gs.update(expected_state.board, next_piece, None)
+            aie.update_state(next_piece_gs)
+            next_best_move, next_time_taken, next_moves_considered = aie.best_move(
+                debug=False
+            )
 
+        if move_sequence:
+            move_sequence_executed = True
+            next_best_move = None
         while move_sequence:
             moves = move_sequence.pop(0)
             emulator.send_multiple_moves(moves)
@@ -182,6 +221,12 @@ if __name__ == "__main__":
         default="lines",
         choices=["lines", "score"],
         help="play for lines or for score",
+    )
+    parser.add_argument(
+        "--debug",
+        action="store_true",
+        default=False,
+        help="enable debug info to be logged",
     )
 
     args = parser.parse_args()
