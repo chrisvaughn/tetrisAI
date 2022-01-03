@@ -54,9 +54,8 @@ class KeyLog:
 
 class Keyboard:
     def __init__(self, pid: int, debug: bool = False):
-        self.macos_detection_time = 0.02
         self.emulator_detection_time = 1 / 60
-        self.min_time_between_key_presses = self.emulator_detection_time * 2
+        self.min_time_between_key_presses = self.emulator_detection_time * 1.5
         self.source = CGEventSourceCreate(kCGEventSourceStateHIDSystemState)
         self.pid = pid
         self.last_keyup_time = 0.0
@@ -66,7 +65,7 @@ class Keyboard:
 
     @property
     def key_hold_time(self):
-        return self.macos_detection_time + self.emulator_detection_time
+        return self.emulator_detection_time
 
     def key_down(self, key: str) -> KeyPress:
         keycode = keys_to_keycodes[key]
@@ -126,6 +125,6 @@ class Keyboard:
         keypresses = []
         for key in keys:
             keypresses.append(self.key_down(key))
-            time.sleep(self.macos_detection_time)
+            time.sleep(self.emulator_detection_time / 1.8)
         for keypress in reversed(keypresses):
             self.keypress_up(keypress, extra_wait)
