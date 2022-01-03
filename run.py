@@ -153,14 +153,15 @@ def run_with_emulator(args, weights):
         elif move_sequence_executed and next_best_move is None:
             # we can plan the next move based on the expected board state and the next piece
             next_piece = detector.detect_next_piece()
-            # use best move computed with "next piece" and expected board state
-            next_piece_gs = GameState()
-            next_piece.set_position(6, 1)
-            next_piece_gs.update(expected_state.board, next_piece, None)
-            aie.update_state(next_piece_gs)
-            next_best_move, next_time_taken, next_moves_considered = aie.best_move(
-                debug=False
-            )
+            if next_piece:
+                # use best move computed with "next piece" and expected board state
+                next_piece_gs = GameState()
+                next_piece.set_position(6, 1)
+                next_piece_gs.update(expected_state.board, next_piece, None)
+                aie.update_state(next_piece_gs)
+                next_best_move, next_time_taken, next_moves_considered = aie.best_move(
+                    debug=False
+                )
 
         if move_sequence:
             move_sequence_executed = True
