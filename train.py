@@ -17,7 +17,7 @@ def main(args):
         "lines": avg_of_lines,
     }
     filename = f"save_{args.fitness_method}.pkl"
-    ga = GA(100, 15, fitness_methods[args.fitness_method], filename)
+    ga = GA(100, 50, fitness_methods[args.fitness_method], filename)
     best = ga.run(resume=True)
     print("All Done")
     print(best)
