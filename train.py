@@ -25,7 +25,7 @@ def main(args):
     if args.no_parallel:
         run_evaluator_in_parallel = False
     if run_evaluator_in_parallel:
-        get_pool()
+        get_pool(4)
     fitness_methods = {
         "score": avg_of(training_seeds, "score"),
         "lines": avg_of(training_seeds, "lines"),

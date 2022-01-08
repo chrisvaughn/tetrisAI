@@ -86,19 +86,29 @@ class Evaluator:
     def update_weights(self, weights: Weights):
         self._weights = weights
 
-    def execute_and_score(self, p: Tuple[int, int]) -> Union[Move, None]:
-        state = self._initial_state.clone()
-        try:
-            execute_move(state, p[0], p[1])
-        except InvalidMove:
-            print(f"Invalid move {p} for piece { state.current_piece}")
-            return None
+    def execute_and_score(self, p: Tuple[int, int, int]) -> List[Move]:
+        rot, left_trans, right_trans = p
+        moves = []
+        for trans in range(-left_trans, right_trans + 1):
+            state = self._initial_state.clone()
+            try:
+                execute_move(state, rot, trans)
+            except InvalidMove:
+                print(f"Invalid move {p} for piece { state.current_piece}")
+                continue
 
-        score, parameters = self.scoring_v1(state, p)
-        move = Move(
-            p[0], p[1], score, parameters, None, parameters["values"]["lines"], state
-        )
-        return move
+            score, parameters = self.scoring_v1(state, (rot, trans))
+            move = Move(
+                rot,
+                trans,
+                score,
+                parameters,
+                None,
+                parameters["values"]["lines"],
+                state,
+            )
+            moves.append(move)
+        return moves
 
     def scoring_v1(
         self, state: GameState, movements_required: Tuple[int, int]
@@ -129,19 +139,16 @@ class Evaluator:
             for _ in range(rot):
                 rotstate.rot_cw()
             l, r = rotstate.current_piece.possible_translations()
-            for t in range(-l, r + 1):
-                options.append((rot, t))
+            options.append((rot, l, r))
 
         if self.parallel:
             imoves = get_pool().imap_unordered(self.execute_and_score, options)
             for m in imoves:
-                if m is not None:
-                    possible_moves.append(m)
+                possible_moves.extend(m)
         else:
             for option in options:
-                move = self.execute_and_score(option)
-                if move is not None:
-                    possible_moves.append(move)
+                moves = self.execute_and_score(option)
+                possible_moves.extend(moves)
 
         return possible_moves
 
