@@ -125,6 +125,6 @@ class Keyboard:
         keypresses = []
         for key in keys:
             keypresses.append(self.key_down(key))
-            time.sleep(self.emulator_detection_time / 1.8)
+            time.sleep(self.emulator_detection_time / 1.4)
         for keypress in reversed(keypresses):
             self.keypress_up(keypress, extra_wait)
