@@ -192,6 +192,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--seed",
         default=int(time.time() * 100000),
+        type=int,
         help="rng seed for non-emulator",
     )
     parser.add_argument(

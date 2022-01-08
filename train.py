@@ -8,8 +8,8 @@ from tetris import Game
 run_evaluator_in_parallel = True
 training_seeds = [
     123456789,
-    0,
-    1,
+    896930353024,
+    36279934242,
     10410112132101108105,
     110111114105,
     3364115110111114105,
@@ -24,7 +24,8 @@ def main(args):
     global run_evaluator_in_parallel
     if args.no_parallel:
         run_evaluator_in_parallel = False
-    get_pool()
+    if run_evaluator_in_parallel:
+        get_pool()
     fitness_methods = {
         "score": avg_of(training_seeds, "score"),
         "lines": avg_of(training_seeds, "lines"),
