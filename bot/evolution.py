@@ -17,6 +17,7 @@ class Genome:
 
 @dataclass
 class SaveState:
+    best_for_each_generation: List[Genome]
     genomes: List[Genome]
     current_generation: int
 
@@ -33,6 +34,7 @@ class GA:
         self.generations = generations
         self.fitness = fitness
         self.save_file = save_file
+        self.best_per_generation = []
 
         self.select_best_n = 15
         self.mutation_rate = 0.05
@@ -99,6 +101,7 @@ class GA:
                 save = pickle.load(f)
             genomes = save.genomes
             current = save.current_generation
+            self.best_per_generation = save.best_for_each_generation
         else:
             genomes = self.create_initial()
             current = 0
@@ -107,7 +110,8 @@ class GA:
             best = self.select_best(genomes)
             genomes = self.combine_and_mutate(best)
             print(best[0])
+            self.best_per_generation.append(best[0])
             with open(self.save_file, "wb") as f:
-                pickle.dump(SaveState(genomes, gen + 1), f)
+                pickle.dump(SaveState(self.best_per_generation, genomes, gen + 1), f)
 
         return self.select_best(genomes)[0]

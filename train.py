@@ -1,10 +1,23 @@
 #!/usr/bin/env python
 import argparse
+import statistics
 
 from bot import GA, Evaluator, Weights, get_pool
 from tetris import Game
 
 run_evaluator_in_parallel = True
+training_seeds = [
+    123456789,
+    0,
+    1,
+    10410112132101108105,
+    110111114105,
+    3364115110111114105,
+    546910785476980,
+    14578341609431,
+    112117112112121,
+    2356441353364364,
+]
 
 
 def main(args):
@@ -13,8 +26,8 @@ def main(args):
         run_evaluator_in_parallel = False
     get_pool()
     fitness_methods = {
-        "score": avg_of_scores,
-        "lines": avg_of_lines,
+        "score": avg_of(training_seeds, "score"),
+        "lines": avg_of(training_seeds, "lines"),
     }
     filename = f"save_{args.fitness_method}.pkl"
     ga = GA(100, 50, fitness_methods[args.fitness_method], filename)
@@ -23,24 +36,19 @@ def main(args):
     print(best)
 
 
-def avg_of_scores(weights, num=10):
-    results = []
-    for i in range(num):
-        lines, score = evaluate(weights, run_evaluator_in_parallel)
-        results.append(score)
-    return sum(results) / len(results)
+def avg_of(seeds, result_key):
+    def avg_of_inner(weights):
+        results = []
+        for seed in seeds:
+            result = evaluate(seed, weights, run_evaluator_in_parallel)
+            results.append(result[result_key])
+        return statistics.mean(results)
+
+    return avg_of_inner
 
 
-def avg_of_lines(weights, num=10):
-    results = []
-    for i in range(num):
-        lines, score = evaluate(weights, run_evaluator_in_parallel)
-        results.append(lines)
-    return sum(results) / len(results)
-
-
-def evaluate(weights: Weights, parallel: bool = True):
-    game = Game(level=19)
+def evaluate(seed: int, weights: Weights, parallel: bool = True):
+    game = Game(seed, level=19)
     aie = Evaluator(game.state, weights, parallel)
     drop_enabled = False
     move_count = 0
@@ -64,7 +72,7 @@ def evaluate(weights: Weights, parallel: bool = True):
         elif drop_enabled:
             game.move_down()
 
-    return game.lines, game.score
+    return {"lines": game.lines, "score": game.score}
 
 
 if __name__ == "__main__":
