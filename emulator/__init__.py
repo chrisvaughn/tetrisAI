@@ -156,7 +156,7 @@ class Emulator:
     def destroy(self):
         self.capturer.stop()
         self.process.kill()
-        self.keyboard.keylog.output()
+        # self.keyboard.keylog.output()
 
     def get_latest_image(self):
         if self.capturer.has_new_image:

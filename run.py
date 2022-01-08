@@ -13,11 +13,14 @@ from bot import Detectorist, Evaluator, defined_weights, get_pool
 from tetris import Game, GameState, Tetrominoes
 
 
-def get_weights(mode, use_save=True):
-    if use_save and os.path.isfile(f"save_{mode}.pkl"):
-        with open(f"save_{mode}.pkl", "rb") as f:
+def get_weights(mode, save_file=None, save_gen=None):
+    if save_file and os.path.isfile(save_file):
+        with open(save_file, "rb") as f:
             saved = pickle.load(f)
-            return saved.genomes[0].weights
+            if save_gen:
+                return saved.best_for_each_generation[save_gen]
+            else:
+                return saved.genomes[0].weights
     print(f"Getting weights for mode: {mode}")
     return defined_weights.by_mode[mode]
 
@@ -35,7 +38,7 @@ def print_final_stats(lines: int, piece_stats: Counter, combos: Counter):
 def main(args):
     # init evaluation pool
     get_pool()
-    weights = get_weights(args.mode, args.saved)
+    weights = get_weights(args.mode, args.save_file, args.save_gen)
     print(f"{weights}")
     if args.emulator:
         run_with_emulator(args, weights)
@@ -192,10 +195,13 @@ if __name__ == "__main__":
         help="rng seed for non-emulator",
     )
     parser.add_argument(
-        "--saved",
-        action="store_true",
-        default=False,
+        "--save-file",
         help="use weights from save file if present",
+    )
+    parser.add_argument(
+        "--save-gen",
+        type=int,
+        help="use weights from specified generation in save file",
     )
     parser.add_argument(
         "--drop",
