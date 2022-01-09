@@ -30,7 +30,10 @@ def main(args):
         "score": avg_of(training_seeds, "score"),
         "lines": avg_of(training_seeds, "lines"),
     }
-    filename = f"save_{args.fitness_method}.pkl"
+    if args.save_file:
+        filename = args.save_file
+    else:
+        filename = f"save_{args.fitness_method}.pkl"
     ga = GA(100, 50, fitness_methods[args.fitness_method], filename)
     best = ga.run(resume=True)
     print("All Done")
@@ -91,6 +94,10 @@ if __name__ == "__main__":
         default="lines",
         choices=["lines", "score"],
         help="fitness method",
+    )
+    parser.add_argument(
+        "--save-file",
+        help="override save file name",
     )
     args = parser.parse_args()
     main(args)
