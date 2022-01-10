@@ -15,14 +15,20 @@ from tetris import Game, GameState, Tetrominoes
 
 def get_weights(mode, save_file=None, save_gen=None):
     if save_file and os.path.isfile(save_file):
+        print(f"Loading weights from {save_file}")
         with open(save_file, "rb") as f:
             saved = pickle.load(f)
-            if save_gen:
-                return saved.best_for_each_generation[save_gen]
+            if save_gen is not None:
+                print(f"Loading generation {save_gen}")
+                return saved.best_for_each_generation[save_gen].weights
             else:
+                print(
+                    f"Loading best fit from generation {saved.current_generation -1 }"
+                )
                 return saved.genomes[0].weights
-    print(f"Getting weights for mode: {mode}")
-    return defined_weights.by_mode[mode]
+    else:
+        print(f"Getting weights for mode: {mode}")
+        return defined_weights.by_mode[mode]
 
 
 def print_final_stats(lines: int, piece_stats: Counter, combos: Counter):

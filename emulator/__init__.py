@@ -69,7 +69,7 @@ class Emulator:
     def send_multiple_moves(self, moves):
         keys = [k for k in [self.move_to_key(move) for move in moves] if k is not None]
         if len(keys) > 1:
-            self.keyboard.simultaneous_key_press(keys, wait_min_before_press=True)
+            self.keyboard.press_keys(keys)
         elif len(keys) == 1:
             self.keyboard.press_key(keys[0], wait_min_before_press=True)
 
@@ -108,7 +108,7 @@ class Emulator:
     def launch(self, limit_speed=False, music=False, level=0, sound=False):
         process = subprocess.Popen([self.path, self.rom_path], stderr=None, stdout=None)
         self.pid = process.pid
-        self.keyboard = Keyboard(self.pid)
+        self.keyboard = Keyboard(self.pid, display=True)
 
         if limit_speed:
             print("Entering Speed Cheat")
