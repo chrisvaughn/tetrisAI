@@ -13,6 +13,7 @@ from .evaluate import Weights
 class Genome:
     weights: Weights = None
     fitness: float = 0.0
+    id: int = 0
 
 
 @dataclass
@@ -39,6 +40,7 @@ class GA:
         self.select_best_n = 15
         self.mutation_rate = 0.05
         self.mutation_step = 0.2
+        self.genome_count = 0
 
     def create_initial(self) -> List[Genome]:
         genomes = []
@@ -55,8 +57,10 @@ class GA:
                     movements_required=random.uniform(-1, 1),
                 ),
                 fitness=0.0,
+                id=self.genome_count,
             )
             genomes.append(genome)
+            self.genome_count += 1
 
         return genomes
 
@@ -92,7 +96,8 @@ class GA:
                         - self.mutation_step
                     )
                 setattr(child_weights, field, value)
-            children.append(Genome(weights=child_weights))
+            children.append(Genome(weights=child_weights, id=self.genome_count))
+            self.genome_count += 1
         return children
 
     def run(self, resume: bool = False):

@@ -1,23 +1,14 @@
 #!/usr/bin/env python
 import argparse
+import random
 import statistics
+import time
 
 from bot import GA, Evaluator, Weights, get_pool
 from tetris import Game
 
 run_evaluator_in_parallel = True
-training_seeds = [
-    123456789,
-    896930353024,
-    36279934242,
-    10410112132101108105,
-    110111114105,
-    3364115110111114105,
-    546910785476980,
-    14578341609431,
-    112117112112121,
-    2356441353364364,
-]
+random.seed(time.time_ns())
 
 
 def main(args):
@@ -26,9 +17,10 @@ def main(args):
         run_evaluator_in_parallel = False
     if run_evaluator_in_parallel:
         get_pool(4)
+    iterations = 15
     fitness_methods = {
-        "score": avg_of(training_seeds, "score"),
-        "lines": avg_of(training_seeds, "lines"),
+        "score": avg_of(iterations, "score"),
+        "lines": avg_of(iterations, "lines"),
     }
     if args.save_file:
         filename = args.save_file
@@ -40,10 +32,11 @@ def main(args):
     print(best)
 
 
-def avg_of(seeds, result_key):
+def avg_of(iterations, result_key):
     def avg_of_inner(weights):
         results = []
-        for seed in seeds:
+        for i in range(iterations):
+            seed = random.randint(2 ** 8, 2 ** 32)
             result = evaluate(seed, weights, run_evaluator_in_parallel)
             results.append(result[result_key])
         return statistics.mean(results)

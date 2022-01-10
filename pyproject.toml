@@ -14,6 +14,7 @@ pyobjc-framework-Quartz = { version = "^8", optional = true }
 mss = { version = "^6", optional = true }
 applescript = { version = "^2021", optional = true }
 
+
 [tool.poetry.extras]
 macOS = ["pyobjc-framework-Quartz", "mss", "applescript"]
 
