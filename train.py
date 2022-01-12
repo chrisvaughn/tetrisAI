@@ -36,16 +36,15 @@ def avg_of(iterations, result_key):
     def avg_of_inner(weights):
         results = []
         for i in range(iterations):
-            seed = random.randint(2 ** 8, 2 ** 32)
-            result = evaluate(seed, weights, run_evaluator_in_parallel)
+            result = evaluate(weights, run_evaluator_in_parallel)
             results.append(result[result_key])
         return statistics.mean(results)
 
     return avg_of_inner
 
 
-def evaluate(seed: int, weights: Weights, parallel: bool = True):
-    game = Game(seed, level=19)
+def evaluate(weights: Weights, parallel: bool = True):
+    game = Game(level=19)
     aie = Evaluator(game.state, weights, parallel)
     drop_enabled = False
     move_count = 0
