@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 import argparse
 import random
-import statistics
 import time
 
 from bot import GA, Evaluator, Weights, get_pool
@@ -38,7 +37,7 @@ def avg_of(iterations, result_key):
         for i in range(iterations):
             result = evaluate(weights, run_evaluator_in_parallel)
             results.append(result[result_key])
-        return statistics.mean(results)
+        return sum(results) / len(results)
 
     return avg_of_inner
 
