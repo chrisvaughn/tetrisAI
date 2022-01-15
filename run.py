@@ -17,7 +17,7 @@ def get_weights(mode, save_file=None, save_gen=None):
     if save_file and os.path.isfile(save_file):
         with open(save_file, "rb") as f:
             saved = pickle.load(f)
-            if save_gen:
+            if save_gen is not None:
                 g = saved.best_for_each_generation[save_gen]
                 print(f"Using Genome {g.id} from generation {save_gen}")
                 return g.weights
