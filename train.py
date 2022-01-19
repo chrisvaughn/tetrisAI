@@ -22,7 +22,7 @@ def main(args):
         filename = args.save_file
     else:
         filename = f"save_{args.fitness_method}.pkl"
-    ga = GA(100, 50, fitness_methods[args.fitness_method], filename)
+    ga = GA(100, 100, fitness_methods[args.fitness_method], filename)
     best = ga.run(resume=True)
     print("All Done")
     print(best)
