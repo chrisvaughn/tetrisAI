@@ -1,13 +1,10 @@
 #!/usr/bin/env python
 import argparse
-import random
-import time
 
 from bot import GA, Evaluator, Weights, get_pool
 from tetris import Game
 
 run_evaluator_in_parallel = True
-random.seed(time.time_ns())
 
 
 def main(args):
