@@ -13,7 +13,7 @@ def main(args):
         run_evaluator_in_parallel = False
     if run_evaluator_in_parallel:
         get_pool(4)
-    iterations = 15
+    iterations = 10
     fitness_methods = {
         "score": avg_of(iterations, "score"),
         "lines": avg_of(iterations, "lines"),
