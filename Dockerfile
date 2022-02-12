@@ -1,7 +1,10 @@
 FROM python:3.9-slim
 WORKDIR /usr/app
 
-RUN apt update && apt install -y libgl1 && rm -rf /var/lib/apt/lists/*
+RUN apt update && apt install -y \
+  libgl1  \
+  libglib2.0-0 \
+  && rm -rf /var/lib/apt/lists/*
 
 RUN pip3 install poetry
 RUN poetry config virtualenvs.create false
