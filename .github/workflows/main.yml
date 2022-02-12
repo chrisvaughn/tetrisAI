@@ -56,6 +56,7 @@ jobs:
       - name: Run isort
         run: poetry run isort . --check-only
   build:
+    needs: [test]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
