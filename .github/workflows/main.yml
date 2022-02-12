@@ -32,7 +32,7 @@ jobs:
         run: poetry run pytest --cov=./ --cov-report=xml
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1
-  code-quality:
+  lint:
     strategy:
       fail-fast: false
       matrix:
@@ -56,7 +56,7 @@ jobs:
       - name: Run isort
         run: poetry run isort . --check-only
   build:
-    needs: [test]
+    needs: [lint, test]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
