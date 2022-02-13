@@ -8,7 +8,6 @@ hand_tuned = Weights(
     absolute_height=-0.8,
     cumulative_height=-0.5,
     well_count=0,
-    movements_required=0,
 )
 
 line_gen9 = Weights(
@@ -19,7 +18,6 @@ line_gen9 = Weights(
     absolute_height=0.14184787008854816,
     cumulative_height=-1.974187965195153,
     well_count=-1.9673957577507517,
-    movements_required=0,
 )
 
 score = Weights(
@@ -30,7 +28,6 @@ score = Weights(
     absolute_height=0.03139923580205717,
     cumulative_height=-0.9004622817496482,
     well_count=-0.37403437412071083,
-    movements_required=0.06610094971298586,
 )
 
 by_mode = {

@@ -9,7 +9,7 @@ RUN apt update && apt install -y \
 RUN pip3 install poetry
 RUN poetry config virtualenvs.create false
 
-COPY pyproject.toml .
+COPY poetry.lock pyproject.toml .
 RUN poetry install --no-dev
 
 COPY . .

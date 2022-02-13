@@ -7,7 +7,7 @@ def test_I():
     cp.set_position(5, 1)
     gs = GameState()
     gs.update(board, cp, None)
-    assert gs.count_holes() == 0
+    assert gs.count_holes() == (0, 0)
     assert gs.cumulative_height() == 0
     assert gs.roughness() == 0
     assert gs.relative_height() == 0

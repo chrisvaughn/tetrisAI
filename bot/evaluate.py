@@ -11,13 +11,13 @@ from .evaluation_pool import get_pool
 @dataclass
 class Weights:
     holes: float = 0
+    depth_weighted_holes: float = 0
     roughness: float = 0
     lines: float = 0
     relative_height: float = 0
     absolute_height: float = 0
     cumulative_height: float = 0
     well_count: float = 0
-    movements_required: float = 0
 
 
 @dataclass
@@ -97,7 +97,7 @@ class Evaluator:
                 print(f"Invalid move {p} for piece { state.current_piece}")
                 continue
 
-            score, parameters = self.scoring_v1(state, (rot, trans))
+            score, parameters = self.scoring_v1(state)
             move = Move(
                 rot,
                 trans,
@@ -110,20 +110,17 @@ class Evaluator:
             moves.append(move)
         return moves
 
-    def scoring_v1(
-        self, state: GameState, movements_required: Tuple[int, int]
-    ) -> Tuple[float, dict]:
+    def scoring_v1(self, state: GameState) -> Tuple[float, dict]:
+        holes, depth_weighted = state.count_holes()
         values = {
-            "holes": state.count_holes(),
+            "holes": holes,
+            "depth_weighted_holes": depth_weighted,
             "roughness": state.roughness(),
             "lines": state.check_full_lines(),
             "relative_height": state.relative_height(),
             "absolute_height": state.absolute_height(),
             "cumulative_height": state.cumulative_height(),
             "well_count": state.well_count(),
-            "movements_required": abs(
-                movements_required[1]
-            ),  # only care about absolute value of translation
         }
         score = 0
         for k in values.keys():

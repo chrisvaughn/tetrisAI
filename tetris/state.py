@@ -227,7 +227,7 @@ class GameState:
         self._completed_lines += full_lines
         return full_lines
 
-    def count_holes(self) -> int:
+    def count_holes(self) -> (int, int):
         return self.board.count_holes()
 
     def cumulative_height(self) -> int:

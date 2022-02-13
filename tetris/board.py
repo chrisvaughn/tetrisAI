@@ -53,14 +53,16 @@ class Board:
         self._peaks = peaks
         return peaks
 
-    def count_holes(self) -> int:
+    def count_holes(self) -> (int, int):
         peaks = self._get_peaks()
         holes = 0
+        weighted_holes = 0
         for x in range(len(peaks)):
             for y in range(Board.rows - 1, peaks[x], -1):
                 if self.board[y][x] == 0:
                     holes += 1
-        return holes
+                    weighted_holes += y
+        return holes, weighted_holes
 
     def cumulative_height(self) -> int:
         peaks = self._get_peaks()
