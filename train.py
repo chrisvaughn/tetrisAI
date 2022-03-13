@@ -13,7 +13,7 @@ def main(args):
         run_evaluator_in_parallel = False
     if run_evaluator_in_parallel:
         get_pool(4)
-    iterations = 10
+    iterations = args.num_iterations
     fitness_methods = {
         "score": avg_of(iterations, "score"),
         "lines": avg_of(iterations, "lines"),
@@ -22,7 +22,12 @@ def main(args):
         filename = args.save_file
     else:
         filename = f"save_{args.fitness_method}.pkl"
-    ga = GA(100, 100, fitness_methods[args.fitness_method], filename)
+    ga = GA(
+        args.population,
+        args.generations,
+        fitness_methods[args.fitness_method],
+        filename,
+    )
     best = ga.run(resume=True)
     print("All Done")
     print(best)
@@ -86,6 +91,11 @@ if __name__ == "__main__":
     parser.add_argument(
         "--save-file",
         help="override save file name",
+    )
+    parser.add_argument("--population", "-p", type=int, default=100)
+    parser.add_argument("--generations", "-g", type=int, default=100)
+    parser.add_argument(
+        "--num_iterations", type=int, default=10, help="number of iterations to average"
     )
     args = parser.parse_args()
     main(args)
