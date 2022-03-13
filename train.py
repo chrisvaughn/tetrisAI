@@ -95,7 +95,7 @@ if __name__ == "__main__":
     parser.add_argument("--population", "-p", type=int, default=100)
     parser.add_argument("--generations", "-g", type=int, default=100)
     parser.add_argument(
-        "--num_iterations", type=int, default=10, help="number of iterations to average"
+        "--num-iterations", type=int, default=10, help="number of iterations to average"
     )
     args = parser.parse_args()
     main(args)
