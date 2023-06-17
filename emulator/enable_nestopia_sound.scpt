@@ -2,7 +2,7 @@ tell application "System Events"
     tell process "Nestopia"
         set frontmost to true
         set desiredCheckboxStatus to true as boolean
-        click menu item "Preferences..." of menu "Nestopia" of menu bar 1
+        click menu item "Settings..." of menu "Nestopia" of menu bar 1
         set theCheckbox to checkbox "Enable Sound" of window 1
         tell theCheckbox
             set checkboxStatus to value of theCheckbox as boolean

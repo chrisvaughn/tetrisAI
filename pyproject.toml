@@ -5,13 +5,13 @@ description = ""
 authors = ["Chris Vaughn <chris@cvaughn.com>"]
 
 [tool.poetry.dependencies]
-python = ">=3.9,<3.11"
+python = ">=3.11"
 numpy = "^1"
 opencv-python = "^4"
 progressbar = "^2.5"
 
-pyobjc-framework-Quartz = { version = "^8", optional = true }
-mss = { version = "^6", optional = true }
+pyobjc-framework-Quartz = { version = "^9", optional = true }
+mss = { version = "^9", optional = true }
 applescript = { version = "^2021", optional = true }
 
 
@@ -19,10 +19,10 @@ applescript = { version = "^2021", optional = true }
 macOS = ["pyobjc-framework-Quartz", "mss", "applescript"]
 
 [tool.poetry.dev-dependencies]
-black = "^21.5b2"
-isort = "^5"
-pytest = "^6"
-pytest-cov = "^3"
+black = "*"
+isort = "*"
+pytest = "*"
+pytest-cov = "*"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

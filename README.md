@@ -1,7 +1,7 @@
 # tetrisAI
 
 ```
-export py_version=3.9.9
+export py_version=3.11
 pyenv install $py_version --skip-existing
 pyenv uninstall -f tetrisAI
 pyenv virtualenv $py_version tetrisAI
