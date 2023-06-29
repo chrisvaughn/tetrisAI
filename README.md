@@ -8,7 +8,6 @@ pyenv virtualenv $py_version tetrisAI
 pyenv local tetrisAI
 ```
 
-
 Get dependencies on macOS for running the AI with an emulator:
 ```
 poetry install -E macOS
