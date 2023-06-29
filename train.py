@@ -97,6 +97,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "--num-iterations", type=int, default=10, help="number of iterations to average"
     )
-    parser.add_argument("--parallel-runners", dest="num_of_parallel", default=4)
+    parser.add_argument(
+        "--parallel-runners", dest="num_of_parallel", type=int, default=4
+    )
     args = parser.parse_args()
     main(args)
