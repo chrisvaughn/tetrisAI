@@ -70,10 +70,24 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_USER }}
           password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Cache Docker layers
+        uses: actions/cache@v2
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-single-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-single-buildx
       - name: Build and push
         uses: docker/build-push-action@v2
         with:
           context: .
+          builder: ${{ steps.buildx.outputs.name }}
           platforms: linux/amd64,linux/arm64
           push: true
           tags: chrisvaughn/tetrisai:latest
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache-new
+      - name: Move cache
+        run: |
+          rm -rf /tmp/.buildx-cache
+          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
