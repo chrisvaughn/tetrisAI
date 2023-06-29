@@ -12,7 +12,7 @@ def main(args):
     if args.no_parallel:
         run_evaluator_in_parallel = False
     if run_evaluator_in_parallel:
-        get_pool(4)
+        get_pool(args.num_of_parallel)
     iterations = args.num_iterations
     fitness_methods = {
         "score": avg_of(iterations, "score"),
@@ -97,5 +97,6 @@ if __name__ == "__main__":
     parser.add_argument(
         "--num-iterations", type=int, default=10, help="number of iterations to average"
     )
+    parser.add_argument("--parallel-runners", dest="num_of_parallel", default=4)
     args = parser.parse_args()
     main(args)
