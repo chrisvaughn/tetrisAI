@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.12-slim
 WORKDIR /usr/app
 
 RUN apt update && apt install -y \
