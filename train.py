@@ -1,10 +1,29 @@
 #!/usr/bin/env python
 import argparse
+from random import randint
 
 from bot import GA, Evaluator, Weights, get_pool
-from tetris import Game
+from tetris import Game, Piece, Tetrominoes
 
 run_evaluator_in_parallel = True
+
+
+def nes_prng(value: int):
+    bit1 = (value >> 1) & 1
+    bit9 = (value >> 9) & 1
+    lmb = bit1 ^ bit9
+    return (lmb << 15) | (value >> 1)
+
+
+def generate_piece_lists(num_pieces: int, seed: int = 0) -> list[Piece]:
+    pieces = []
+    for i in range(num_pieces):
+        value = nes_prng(seed)
+        seed = value
+        p = Tetrominoes[value % len(Tetrominoes)].clone()
+        p.set_position(6, 1)
+        pieces.append(p)
+    return pieces
 
 
 def main(args):
@@ -13,10 +32,13 @@ def main(args):
         run_evaluator_in_parallel = False
     if run_evaluator_in_parallel:
         get_pool(args.num_of_parallel)
-    iterations = args.num_iterations
+    piece_lists = []
+    for i in range(args.num_iterations):
+        piece_lists.append(generate_piece_lists(1000, randint(0, 10000000)))
+
     fitness_methods = {
-        "score": avg_of(iterations, "score"),
-        "lines": avg_of(iterations, "lines"),
+        "score": top_3rd_avg_of(piece_lists, "score"),
+        "lines": top_3rd_avg_of(piece_lists, "lines"),
     }
     if args.save_file:
         filename = args.save_file
@@ -33,19 +55,21 @@ def main(args):
     print(best)
 
 
-def avg_of(iterations, result_key):
+def top_3rd_avg_of(piece_lists, result_key):
     def avg_of_inner(weights):
         results = []
-        for i in range(iterations):
-            result = evaluate(weights, run_evaluator_in_parallel)
+        for piece_list in piece_lists:
+            result = evaluate(weights, piece_list, run_evaluator_in_parallel)
             results.append(result[result_key])
+        results = sorted(results)
+        results = results[int(len(results) * 0.33) :]
         return sum(results) / len(results)
 
     return avg_of_inner
 
 
-def evaluate(weights: Weights, parallel: bool = True):
-    game = Game(level=19)
+def evaluate(weights: Weights, piece_list: list[Piece], parallel: bool = True):
+    game = Game(level=19, piece_list=piece_list)
     aie = Evaluator(game.state, weights, parallel)
     drop_enabled = False
     move_count = 0
@@ -95,7 +119,10 @@ if __name__ == "__main__":
     parser.add_argument("--population", "-p", type=int, default=100)
     parser.add_argument("--generations", "-g", type=int, default=100)
     parser.add_argument(
-        "--num-iterations", type=int, default=10, help="number of iterations to average"
+        "--num-iterations",
+        type=int,
+        default=100,
+        help="number of iterations to average top 3rd",
     )
     parser.add_argument(
         "--parallel-runners", dest="num_of_parallel", type=int, default=4

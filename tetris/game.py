@@ -3,6 +3,7 @@ import time
 from collections import Counter
 
 from .board import Board
+from .pieces import Piece
 from .state import GameState
 
 # frames per cell in original NES Tetris
@@ -43,8 +44,10 @@ score_by_number_of_lines_cleared = [40, 100, 300, 1200]
 
 
 class Game:
-    def __init__(self, seed=int(time.time() * 1000), level=19):
-        self.state = GameState(seed)
+    def __init__(
+        self, seed=int(time.time() * 1000), level=19, piece_list: [Piece] = None
+    ):
+        self.state = GameState(seed, piece_list)
         self.state_lock = threading.Lock()
         self.frames_per_cell = frames_per_cell_by_level[level]
         self.framerate = 1 / 60
@@ -56,6 +59,7 @@ class Game:
         self.score = 0
         self.piece_stats = Counter()
         self.line_combos = Counter()
+        self.level = level
 
     def start(self):
         self.game_thread.start()
@@ -86,7 +90,10 @@ class Game:
                     if lines > 0:
                         self.lines += lines
                         if lines <= len(score_by_number_of_lines_cleared):
-                            self.score += score_by_number_of_lines_cleared[lines - 1]
+                            self.score += (
+                                score_by_number_of_lines_cleared[lines - 1] * self.level
+                                + 1
+                            )
                         self.line_combos[lines] += 1
                     cp = self.state.select_next_piece()
                     self.piece_stats[cp.name] += 1
