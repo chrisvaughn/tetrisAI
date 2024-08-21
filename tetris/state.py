@@ -24,7 +24,7 @@ def nes_prng(value: int):
 
 
 class GameState:
-    def __init__(self, seed: int = 0):
+    def __init__(self, seed: int = 0, piece_list=None):
         self.board: Union[Board, None] = None
         self.current_piece: Union[Piece, None] = None
         self.next_piece: Union[Piece, None] = None
@@ -32,8 +32,12 @@ class GameState:
         self._completed_lines: int = 0
         self._last_rn: int = seed
         self._first_piece: bool = True
+        self.piece_list = piece_list
 
     def select_next_piece(self) -> Piece:
+        if self.piece_list:
+            return self.piece_list.pop(0)
+
         value = nes_prng(self._last_rn)
         self._last_rn = value
         p = Tetrominoes[value % len(Tetrominoes)].clone()
