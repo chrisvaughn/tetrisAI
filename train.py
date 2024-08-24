@@ -37,8 +37,8 @@ def main(args):
         piece_lists.append(generate_piece_lists(1000, randint(0, 10000000)))
 
     fitness_methods = {
-        "score": top_3rd_avg_of(piece_lists, "score"),
-        "lines": top_3rd_avg_of(piece_lists, "lines"),
+        "score": top_3rd_avg_of(piece_lists, "score", args.scoring),
+        "lines": top_3rd_avg_of(piece_lists, "lines", args.scoring),
     }
     if args.save_file:
         filename = args.save_file
@@ -55,11 +55,11 @@ def main(args):
     print(best)
 
 
-def top_3rd_avg_of(piece_lists, result_key):
+def top_3rd_avg_of(piece_lists, result_key, scoring):
     def avg_of_inner(weights):
         results = []
         for piece_list in piece_lists:
-            result = evaluate(weights, piece_list, run_evaluator_in_parallel)
+            result = evaluate(weights, piece_list, run_evaluator_in_parallel, scoring)
             results.append(result[result_key])
         results = sorted(results)
         results = results[int(len(results) * 0.33) :]
@@ -68,9 +68,14 @@ def top_3rd_avg_of(piece_lists, result_key):
     return avg_of_inner
 
 
-def evaluate(weights: Weights, piece_list: list[Piece], parallel: bool = True):
+def evaluate(
+    weights: Weights,
+    piece_list: list[Piece],
+    parallel: bool = True,
+    scoring: str = "v2",
+):
     game = Game(level=19, piece_list=piece_list)
-    aie = Evaluator(game.state, weights, parallel)
+    aie = Evaluator(game.state, weights, parallel, scoring)
     drop_enabled = False
     move_count = 0
     move_sequence = []
@@ -127,5 +132,6 @@ if __name__ == "__main__":
     parser.add_argument(
         "--parallel-runners", dest="num_of_parallel", type=int, default=4
     )
+    parser.add_argument("--scoring", choices=["v1", "v2"], default="v2")
     args = parser.parse_args()
     main(args)

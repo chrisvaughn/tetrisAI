@@ -85,7 +85,10 @@ class Board:
     def game_over(self) -> bool:
         return self.board.all()
 
-    def well_count(self) -> int:
+    def deep_well_count(self) -> int:
+        """
+        the number of wells containing 3 or more well cells.
+        """
         peaks = self._get_peaks()
         well_count = 0
         for i in range(len(peaks) - 1):
@@ -103,3 +106,35 @@ class Board:
             if left - center <= -3 and right - center <= -3:
                 well_count += 1
         return well_count
+
+    def count_well_cells(self) -> int:
+        """
+        the number of cells within the wells
+        """
+        peaks = self._get_peaks()
+        well_cells = 0
+        for i in range(len(peaks) - 1):
+            if i == 0:
+                left = 0
+            else:
+                left = peaks[i - 1]
+
+            center = peaks[i]
+
+            if i < 9:
+                right = peaks[i + 1]
+            else:
+                right = 0
+            well_cells += (left - center, right - center)
+        return well_cells
+
+    def count_cells(self) -> (int, int):
+        peaks = self._get_peaks()
+        cells = 0
+        weighted_cells = 0
+        for x in range(len(peaks)):
+            for y in range(Board.rows - 1, peaks[x], -1):
+                if self.board[y][x] == 1:
+                    cells += 1
+                    weighted_cells += y
+        return cells, weighted_cells
