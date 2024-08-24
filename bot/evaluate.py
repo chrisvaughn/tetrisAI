@@ -18,6 +18,10 @@ class Weights:
     absolute_height: float = 0
     cumulative_height: float = 0
     well_count: float = 0
+    well_cells: float = 0
+    deep_well_count: float = 0
+    total_cells: float = 0
+    total_weighted_cells: float = 0
 
 
 @dataclass
@@ -75,10 +79,17 @@ class Evaluator:
         state: GameState,
         weights: Weights,
         parallel: bool = True,
+        scoring: str = "v1",
     ):
         self._initial_state = state
         self._weights = weights
         self.parallel = parallel
+        if scoring == "v1":
+            self.scoring_func = self.scoring_v1
+        elif scoring == "v2":
+            self.scoring_func = self.scoring_v2
+        else:
+            raise ValueError(f"Invalid scoring function {scoring}")
 
     def update_state(self, state: GameState):
         self._initial_state = state
@@ -97,7 +108,7 @@ class Evaluator:
                 print(f"Invalid move {p} for piece { state.current_piece}")
                 continue
 
-            score, parameters = self.scoring_v1(state)
+            score, parameters = self.scoring_func(state)
             move = Move(
                 rot,
                 trans,
@@ -120,7 +131,28 @@ class Evaluator:
             "relative_height": state.relative_height(),
             "absolute_height": state.absolute_height(),
             "cumulative_height": state.cumulative_height(),
-            "well_count": state.well_count(),
+            "well_count": state.deep_well_count(),
+        }
+        score = 0
+        for k in values.keys():
+            score += getattr(self._weights, k) * values[k]
+        return score, {"values": values, "weights": self._weights}
+
+    def scoring_v2(self, state: GameState) -> Tuple[float, dict]:
+        holes, depth_weighted = state.count_holes()
+        cells, weighted_cells = state.count_cells()
+        values = {
+            "lines": state.check_full_lines(),
+            "well_cells": state.well_cells(),
+            "deep_well_count": state.deep_well_count(),
+            "holes": holes,
+            "depth_weighted_holes": depth_weighted,
+            "cumulative_height": state.cumulative_height(),
+            "roughness": state.roughness(),
+            "relative_height": state.relative_height(),
+            "absolute_height": state.absolute_height(),
+            "total_cells": cells,
+            "total_weighted_cells": weighted_cells,
         }
         score = 0
         for k in values.keys():
@@ -131,11 +163,11 @@ class Evaluator:
         possible_moves: List[Move] = []
         meaningful_rotations = len(self._initial_state.current_piece.shapes)
         options = []
+        piece = self._initial_state.current_piece.clone()
         for rot in range(meaningful_rotations):
-            rotstate = self._initial_state.clone()
-            for _ in range(rot):
-                rotstate.rot_cw()
-            l, r = rotstate.current_piece.possible_translations()
+            if rot > 0:
+                piece.rot_cw()
+            l, r = piece.possible_translations()
             options.append((rot, l, r))
 
         if self.parallel:

@@ -35,4 +35,4 @@ def test_well_count():
     board[15:, 4] = 1
     board[13:, 6] = 1
     b = Board(board)
-    assert b.well_count() == 3
+    assert b.deep_well_count() == 3

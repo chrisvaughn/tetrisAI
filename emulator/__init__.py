@@ -17,6 +17,11 @@ dir_path = os.path.dirname(os.path.realpath(__file__))
 image_path = os.path.join(dir_path, "templates")
 
 
+def resize_window():
+    r = applescript.run(os.path.join(dir_path, "resize_nestopia.scpt"))
+    return r.code == 0
+
+
 def enter_speed_cheat():
     r = applescript.run(os.path.join(dir_path, "enter_nestopia_cheat.scpt"))
     return r.code == 0
@@ -110,6 +115,8 @@ class Emulator:
         self.pid = process.pid
         self.keyboard = Keyboard(self.pid)
 
+        resize_window()
+
         if limit_speed:
             print("Entering Speed Cheat")
             if enter_speed_cheat():
@@ -121,10 +128,14 @@ class Emulator:
 
         if sound:
             print("Enabling Sound")
-            enable_sound()
+            if not enable_sound():
+                print("Failed to enable sound")
         else:
             print("Disabling sound")
-            disable_sound()
+            if not disable_sound():
+                print("Failed to disable sound")
+
+        time.sleep(5)
 
         start_template = cv2.imread(
             os.path.join(image_path, "push_start.png"), cv2.IMREAD_GRAYSCALE

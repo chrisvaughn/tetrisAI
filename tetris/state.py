@@ -246,5 +246,11 @@ class GameState:
     def absolute_height(self) -> int:
         return self.board.height()
 
-    def well_count(self) -> int:
-        return self.board.well_count()
+    def deep_well_count(self) -> int:
+        return self.board.deep_well_count()
+
+    def well_cells(self) -> int:
+        return self.board.deep_well_count()
+
+    def count_cells(self) -> (int, int):
+        return self.board.count_cells()
