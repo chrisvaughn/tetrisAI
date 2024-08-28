@@ -185,7 +185,12 @@ class Evaluator:
         start = time.time()
         all_moves = sorted(
             self.evaluate_all_moves(),
-            key=lambda x: (x.score, x.lines_completed),
+            key=lambda x: (
+                x.score,
+                x.lines_completed,
+                -abs(x.translation),
+                -x.rotations,
+            ),
             reverse=True,
         )
         if debug:

@@ -56,7 +56,7 @@ def run_in_memory(args, weights):
     move_sequence = []
     game = Game(seed, args.level)
     game.display()
-    aie = Evaluator(game.state, weights)
+    aie = Evaluator(game.state, weights, scoring=args.scoring)
     game.start()
     while not game.game_over:
         if cv2.waitKey(1) == ord("q"):
@@ -101,7 +101,7 @@ def run_with_emulator(args, weights):
 
     gs = GameState(args.seed)
     detector = Detectorist()
-    aie = Evaluator(gs, weights)
+    aie = Evaluator(gs, weights, scoring=args.scoring)
 
     expected_state: Union[GameState, None] = None
     move_sequence_executed = False
@@ -118,11 +118,11 @@ def run_with_emulator(args, weights):
         gs.update(detector.board, detector.current_piece, detector.next_piece)
         if gs.new_piece():
             if (
-                expected_state
+                expected_state is not None
                 and not gs.board.compare(expected_state.board)
                 or next_best_move is None
             ):
-                if args.debug:
+                if expected_state is not None and args.debug:
                     print("Board state not the same")
                     print("Expected:")
                     expected_state.board.print()
@@ -132,7 +132,7 @@ def run_with_emulator(args, weights):
                 # re-plan best move with current board state
                 print("Re-planning best move")
                 aie.update_state(gs)
-                best_move, time_taken, moves_considered = aie.best_move()
+                best_move, time_taken, moves_considered = aie.best_move(args.debug)
             else:
                 best_move, time_taken, moves_considered = (
                     next_best_move,
@@ -165,7 +165,7 @@ def run_with_emulator(args, weights):
                 next_piece_gs.update(expected_state.board, next_piece, None)
                 aie.update_state(next_piece_gs)
                 next_best_move, next_time_taken, next_moves_considered = aie.best_move(
-                    debug=False
+                    args.debug
                 )
 
         if move_sequence:
@@ -238,6 +238,7 @@ if __name__ == "__main__":
         default=False,
         help="enable debug info to be logged",
     )
+    parser.add_argument("--scoring", choices=["v1", "v2"], default="v2")
 
     args = parser.parse_args()
     main(args)
