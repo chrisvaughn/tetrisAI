@@ -15,15 +15,14 @@ pyobjc-framework-Quartz = { version = "^10", optional = true }
 mss = { version = "^9", optional = true }
 applescript = { version = "^2021", optional = true }
 
-
-[tool.poetry.extras]
-macOS = ["pyobjc-framework-Quartz", "mss", "applescript"]
-
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
 black = "*"
 isort = "*"
 pytest = "*"
 pytest-cov = "*"
+
+[tool.poetry.extras]
+macOS = ["pyobjc-framework-Quartz", "mss", "applescript"]
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
