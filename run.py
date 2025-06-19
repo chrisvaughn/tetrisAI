@@ -9,11 +9,26 @@ from typing import Union
 
 import cv2
 
-from bot import Detectorist, Evaluator, defined_weights, get_pool
+from bot import Detectorist, WeightedBot, RandomBot, defined_weights, get_pool
 from tetris import Game, GameState, Tetrominoes
 
 
-def get_weights(mode, save_file=None, save_gen=None):
+def get_bot(bot_model, save_file=None, save_gen=None):
+    """Create a bot instance based on the bot-model argument"""
+    if bot_model == "Random":
+        return RandomBot("RandomBot")
+    elif bot_model == "WeightedBotLines":
+        weights = get_weights_from_save("lines", save_file, save_gen)
+        return WeightedBot(weights, name="WeightedBotLines")
+    elif bot_model == "WeightedBotScore":
+        weights = get_weights_from_save("score", save_file, save_gen)
+        return WeightedBot(weights, name="WeightedBotScore")
+    else:
+        raise ValueError(f"Unknown bot model: {bot_model}")
+
+
+def get_weights_from_save(mode, save_file=None, save_gen=None):
+    """Get weights from save file or use default weights"""
     if save_file and os.path.isfile(save_file):
         with open(save_file, "rb") as f:
             saved = pickle.load(f)
@@ -40,15 +55,16 @@ def print_final_stats(lines: int, piece_stats: Counter, combos: Counter):
 def main(args):
     # init evaluation pool
     get_pool()
-    weights = get_weights(args.mode, args.save_file, args.save_gen)
-    print(f"{weights}")
+    bot = get_bot(args.bot_model, args.save_file, args.save_gen)
+    print(f"Using bot: {bot.name}")
+    print(f"Bot stats: {bot.get_stats()}")
     if args.emulator:
-        run_with_emulator(args, weights)
+        run_with_emulator(args, bot)
     else:
-        run_in_memory(args, weights)
+        run_in_memory(args, bot)
 
 
-def run_in_memory(args, weights):
+def run_in_memory(args, bot):
     seed = args.seed
     soft_drop = args.drop
     move_count = 0
@@ -56,7 +72,6 @@ def run_in_memory(args, weights):
     move_sequence = []
     game = Game(seed, args.level)
     game.display()
-    aie = Evaluator(game.state, weights, scoring=args.scoring)
     game.start()
     while not game.game_over:
         if cv2.waitKey(1) == ord("q"):
@@ -66,8 +81,8 @@ def run_in_memory(args, weights):
         if game.state.new_piece() and not move_sequence:
             drop_enabled = False
             move_count += 1
-            aie.update_state(game.state)
-            best_move, time_taken, moves_considered = aie.best_move(debug=False)
+            bot.update_state(game.state)
+            best_move, time_taken, moves_considered = bot.get_best_move(debug=False)
             move_sequence = best_move.to_sequence()
             if args.stats:
                 print(
@@ -88,7 +103,7 @@ def run_in_memory(args, weights):
     print_final_stats(game.lines, game.piece_stats, game.line_combos)
 
 
-def run_with_emulator(args, weights):
+def run_with_emulator(args, bot):
     from emulator import Emulator
 
     emulator = Emulator(args.limit_speed, args.music, args.level, args.sound)
@@ -101,7 +116,6 @@ def run_with_emulator(args, weights):
 
     gs = GameState(args.seed)
     detector = Detectorist()
-    aie = Evaluator(gs, weights, scoring=args.scoring)
 
     expected_state: Union[GameState, None] = None
     move_sequence_executed = False
@@ -131,8 +145,8 @@ def run_with_emulator(args, weights):
                     print("\n")
                 # re-plan best move with current board state
                 print("Re-planning best move")
-                aie.update_state(gs)
-                best_move, time_taken, moves_considered = aie.best_move(args.debug)
+                bot.update_state(gs)
+                best_move, time_taken, moves_considered = bot.get_best_move(args.debug)
             else:
                 best_move, time_taken, moves_considered = (
                     next_best_move,
@@ -145,13 +159,15 @@ def run_with_emulator(args, weights):
             move_count += 1
             piece_stats[gs.current_piece.name] += 1
             move_sequence = best_move.to_sequence()
-            expected_state = best_move.end_state.clone()
+            # Use the end state from the bot move
+            expected_state = best_move.end_state.clone() if best_move.end_state else gs.clone()
             if args.stats:
                 print(
                     f"Move {move_count}: Piece: {gs.current_piece.name}, Considered {moves_considered} moves in {int(time_taken * 1000)} ms."
                 )
                 print(f"\tSequence: {move_sequence}")
-            if best_move.lines_completed:
+            # Track lines completed if available
+            if hasattr(best_move, 'lines_completed') and best_move.lines_completed:
                 lines = best_move.lines_completed
                 line_combos[lines] += 1
                 lines_completed += lines
@@ -163,8 +179,8 @@ def run_with_emulator(args, weights):
                 next_piece_gs = GameState()
                 next_piece.set_position(6, 1)
                 next_piece_gs.update(expected_state.board, next_piece, None)
-                aie.update_state(next_piece_gs)
-                next_best_move, next_time_taken, next_moves_considered = aie.best_move(
+                bot.update_state(next_piece_gs)
+                next_best_move, next_time_taken, next_moves_considered = bot.get_best_move(
                     args.debug
                 )
 
@@ -227,10 +243,10 @@ if __name__ == "__main__":
     )
     parser.add_argument("--level", default=19, type=int, help="level to start at")
     parser.add_argument(
-        "--mode",
-        default="lines",
-        choices=["lines", "score"],
-        help="play for lines or for score",
+        "--bot-model",
+        default="WeightedBotLines",
+        choices=["Random", "WeightedBotLines", "WeightedBotScore"],
+        help="bot model to use",
     )
     parser.add_argument(
         "--debug",
