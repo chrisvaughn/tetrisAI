@@ -9,9 +9,9 @@ from typing import Union
 
 import cv2
 
-from bot import WeightedBot, RandomBot, by_mode, get_pool
-from vision import Detectorist
+from bot import RandomBot, WeightedBot, by_mode, get_pool
 from tetris import Game, GameState, Tetrominoes
+from vision import Detectorist
 
 
 def get_bot(bot_model, save_file=None, save_gen=None):
@@ -161,14 +161,16 @@ def run_with_emulator(args, bot):
             piece_stats[gs.current_piece.name] += 1
             move_sequence = best_move.to_sequence()
             # Use the end state from the bot move
-            expected_state = best_move.end_state.clone() if best_move.end_state else gs.clone()
+            expected_state = (
+                best_move.end_state.clone() if best_move.end_state else gs.clone()
+            )
             if args.stats:
                 print(
                     f"Move {move_count}: Piece: {gs.current_piece.name}, Considered {moves_considered} moves in {int(time_taken * 1000)} ms."
                 )
                 print(f"\tSequence: {move_sequence}")
             # Track lines completed if available
-            if hasattr(best_move, 'lines_completed') and best_move.lines_completed:
+            if hasattr(best_move, "lines_completed") and best_move.lines_completed:
                 lines = best_move.lines_completed
                 line_combos[lines] += 1
                 lines_completed += lines
@@ -181,8 +183,8 @@ def run_with_emulator(args, bot):
                 next_piece.set_position(6, 1)
                 next_piece_gs.update(expected_state.board, next_piece, None)
                 bot.update_state(next_piece_gs)
-                next_best_move, next_time_taken, next_moves_considered = bot.get_best_move(
-                    args.debug
+                next_best_move, next_time_taken, next_moves_considered = (
+                    bot.get_best_move(args.debug)
                 )
 
         if move_sequence:
