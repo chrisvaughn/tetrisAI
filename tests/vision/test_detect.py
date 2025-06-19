@@ -3,7 +3,7 @@ import os
 import cv2
 import numpy as np
 
-from bot import Detectorist
+from vision import Detectorist
 
 cur_dir = os.path.dirname(os.path.abspath(__file__))
 image_path = os.path.join(cur_dir, "images")

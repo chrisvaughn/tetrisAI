@@ -9,7 +9,8 @@ from typing import Union
 
 import cv2
 
-from bot import Detectorist, WeightedBot, RandomBot, defined_weights, get_pool
+from bot import WeightedBot, RandomBot, defined_weights, get_pool
+from vision import Detectorist
 from tetris import Game, GameState, Tetrominoes
 
 
