@@ -2,7 +2,7 @@
 import argparse
 from random import randint
 
-from bot import GA, Evaluator, Weights, get_pool
+from bot import GA, WeightedBot, RandomBot, Weights, get_pool
 from tetris import Game, Piece, Tetrominoes
 
 run_evaluator_in_parallel = True
@@ -32,13 +32,21 @@ def main(args):
         run_evaluator_in_parallel = False
     if run_evaluator_in_parallel:
         get_pool(args.num_of_parallel)
+    
+    print(f"Training {args.bot_model} model...")
+    print(f"Fitness method: {args.fitness_method}")
+    print(f"Scoring: {args.scoring}")
+    print(f"Population: {args.population}, Generations: {args.generations}")
+    print(f"Parallel: {run_evaluator_in_parallel}")
+    print("-" * 50)
+    
     piece_lists = []
     for i in range(args.num_iterations):
         piece_lists.append(generate_piece_lists(1000, randint(0, 10000000)))
 
     fitness_methods = {
-        "score": top_3rd_avg_of(piece_lists, "score", args.scoring),
-        "lines": top_3rd_avg_of(piece_lists, "lines", args.scoring),
+        "score": top_3rd_avg_of(piece_lists, "score", args.scoring, args.bot_model),
+        "lines": top_3rd_avg_of(piece_lists, "lines", args.scoring, args.bot_model),
     }
     if args.save_file:
         filename = args.save_file
@@ -55,11 +63,29 @@ def main(args):
     print(best)
 
 
-def top_3rd_avg_of(piece_lists, result_key, scoring):
+def create_bot(bot_model: str, weights: Weights = None, parallel: bool = True, scoring: str = "v2"):
+    """Create a bot instance based on the bot model"""
+    if bot_model == "WeightedBot":
+        if weights is None:
+            weights = Weights()
+        return WeightedBot(weights, parallel=parallel, scoring=scoring)
+    elif bot_model == "RandomBot":
+        return RandomBot("RandomBot")
+    else:
+        raise ValueError(f"Unknown bot model: {bot_model}")
+
+
+def top_3rd_avg_of(piece_lists, result_key, scoring, bot_model):
+    # Create a single bot instance to reuse
+    bot = create_bot(bot_model, parallel=run_evaluator_in_parallel, scoring=scoring)
+    
     def avg_of_inner(weights):
+        # Update the bot's weights instead of creating a new instance
+        if hasattr(bot, 'update_weights'):
+            bot.update_weights(weights)
         results = []
         for piece_list in piece_lists:
-            result = evaluate(weights, piece_list, run_evaluator_in_parallel, scoring)
+            result = evaluate_with_bot(bot, piece_list)
             results.append(result[result_key])
         results = sorted(results)
         results = results[int(len(results) * 0.33) :]
@@ -68,14 +94,9 @@ def top_3rd_avg_of(piece_lists, result_key, scoring):
     return avg_of_inner
 
 
-def evaluate(
-    weights: Weights,
-    piece_list: list[Piece],
-    parallel: bool = True,
-    scoring: str = "v2",
-):
+def evaluate_with_bot(bot: WeightedBot, piece_list: list[Piece]):
+    """Evaluate a piece list using an existing bot instance"""
     game = Game(level=19, piece_list=piece_list)
-    aie = Evaluator(game.state, weights, parallel, scoring)
     drop_enabled = False
     move_count = 0
     move_sequence = []
@@ -84,8 +105,8 @@ def evaluate(
         if game.state.new_piece() and not move_sequence:
             drop_enabled = False
             move_count += 1
-            aie.update_state(game.state)
-            best_move, time_taken, moves_considered = aie.best_move(debug=False)
+            bot.update_state(game.state)
+            best_move, time_taken, moves_considered = bot.get_best_move(debug=False)
             move_sequence = best_move.to_sequence()
 
         if move_sequence:
@@ -99,6 +120,18 @@ def evaluate(
             game.move_down()
 
     return {"lines": game.lines, "score": game.score}
+
+
+def evaluate(
+    weights: Weights,
+    piece_list: list[Piece],
+    parallel: bool = True,
+    scoring: str = "v2",
+    bot_model: str = "WeightedBot",
+):
+    """Legacy evaluate function for backward compatibility"""
+    bot = create_bot(bot_model, weights, parallel, scoring)
+    return evaluate_with_bot(bot, piece_list)
 
 
 if __name__ == "__main__":
@@ -133,5 +166,11 @@ if __name__ == "__main__":
         "--parallel-runners", dest="num_of_parallel", type=int, default=4
     )
     parser.add_argument("--scoring", choices=["v1", "v2"], default="v2")
+    parser.add_argument(
+        "--bot-model", 
+        choices=["WeightedBot", "RandomBot"], 
+        default="WeightedBot",
+        help="bot model to train"
+    )
     args = parser.parse_args()
     main(args)
