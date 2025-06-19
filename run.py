@@ -9,7 +9,7 @@ from typing import Union
 
 import cv2
 
-from bot import WeightedBot, RandomBot, defined_weights, get_pool
+from bot import WeightedBot, RandomBot, by_mode, get_pool
 from vision import Detectorist
 from tetris import Game, GameState, Tetrominoes
 
@@ -40,7 +40,7 @@ def get_weights_from_save(mode, save_file=None, save_gen=None):
             else:
                 return saved.genomes[0].weights
     print(f"Getting weights for mode: {mode}")
-    return defined_weights.by_mode[mode]
+    return by_mode[mode]
 
 
 def print_final_stats(lines: int, piece_stats: Counter, combos: Counter):

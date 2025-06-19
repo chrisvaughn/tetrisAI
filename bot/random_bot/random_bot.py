@@ -4,7 +4,7 @@ from typing import List, Tuple
 
 from tetris import GameState, Board, Piece, InvalidMove
 
-from .base import BaseBot, BotMove
+from ..base import BaseBot, BotMove
 
 
 class RandomBot(BaseBot):

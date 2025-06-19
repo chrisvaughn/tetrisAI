@@ -1,10 +1,19 @@
-from .evaluate import Evaluator, Weights
-from .evaluation_pool import get_pool
-from .evolution import GA, Genome
-
-# New abstract bot interface
+# Abstract bot interface
 from .base import BaseBot, BotMove
 
-# Concrete bot implementations
-from .weighted_bot import WeightedBot
+# Bot implementations
+from .weighted_bot import WeightedBot, Evaluator, Weights, by_mode, get_pool, GA, Genome
 from .random_bot import RandomBot
+
+__all__ = [
+    'BaseBot',
+    'BotMove', 
+    'WeightedBot',
+    'RandomBot',
+    'Evaluator',
+    'Weights',
+    'by_mode',
+    'get_pool',
+    'GA',
+    'Genome'
+]

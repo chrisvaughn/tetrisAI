@@ -3,7 +3,7 @@ from typing import List, Tuple, Optional
 
 from tetris import GameState, Board, Piece, InvalidMove
 
-from .base import BaseBot, BotMove
+from ..base import BaseBot, BotMove
 from .evaluate import Evaluator, Weights, execute_move
 
 

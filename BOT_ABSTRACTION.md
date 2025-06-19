@@ -33,7 +33,7 @@ The bot abstraction provides a common interface (`BaseBot`) that all bot impleme
 
 #### `WeightedBot`
 
-- **Location**: `bot/weighted_bot.py`
+- **Location**: `bot/weighted_bot/weighted_bot.py`
 - **Purpose**: Wrapper around the existing Evaluator-based bot
 - **Features**:
   - Uses weighted evaluation functions
@@ -43,7 +43,7 @@ The bot abstraction provides a common interface (`BaseBot`) that all bot impleme
 
 #### `RandomBot`
 
-- **Location**: `bot/random_bot.py`
+- **Location**: `bot/random_bot/random_bot.py`
 - **Purpose**: Simple bot that makes random moves
 - **Features**:
   - Demonstrates the abstraction interface
@@ -55,11 +55,11 @@ The bot abstraction provides a common interface (`BaseBot`) that all bot impleme
 ### Basic Usage
 
 ```python
-from bot import WeightedBot, RandomBot, defined_weights
+from bot import WeightedBot, RandomBot, by_mode
 from tetris import Game
 
 # Create a weighted bot
-weights = defined_weights.by_mode["lines"]
+weights = by_mode["lines"]
 bot = WeightedBot(weights, name="MyBot")
 
 # Create a game
@@ -142,7 +142,7 @@ class MyCustomBot(BaseBot):
 ### Running Games with Different Bots
 
 ```python
-from bot import WeightedBot, RandomBot, defined_weights
+from bot import WeightedBot, RandomBot, by_mode
 from tetris import Game
 
 def run_game_with_bot(bot, seed=12345, max_moves=100):
@@ -172,8 +172,8 @@ def run_game_with_bot(bot, seed=12345, max_moves=100):
 # Compare different bots
 bots = [
     RandomBot("Random"),
-    WeightedBot(defined_weights.by_mode["lines"], name="Lines"),
-    WeightedBot(defined_weights.by_mode["score"], name="Score"),
+    WeightedBot(by_mode["lines"], name="Lines"),
+    WeightedBot(by_mode["score"], name="Score"),
 ]
 
 for bot in bots:
@@ -188,16 +188,16 @@ The new abstraction is designed to be backward compatible. You can gradually mig
 ### Old Way
 
 ```python
-from bot import Evaluator, defined_weights
-evaluator = Evaluator(game.state, defined_weights.by_mode["lines"])
+from bot import Evaluator, by_mode
+evaluator = Evaluator(game.state, by_mode["lines"])
 best_move, time_taken, moves_considered = evaluator.best_move()
 ```
 
 ### New Way
 
 ```python
-from bot import WeightedBot, defined_weights
-bot = WeightedBot(defined_weights.by_mode["lines"])
+from bot import WeightedBot, by_mode
+bot = WeightedBot(by_mode["lines"])
 bot.update_state(game.state)
 best_move, time_taken, moves_considered = bot.get_best_move()
 ```
