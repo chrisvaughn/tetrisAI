@@ -1,4 +1,4 @@
-FROM python:3.12-slim
+FROM python:3.14-slim
 WORKDIR /usr/app
 
 RUN apt update && apt install -y \
@@ -9,7 +9,7 @@ RUN apt update && apt install -y \
 RUN pip3 install poetry
 RUN poetry config virtualenvs.create false
 
-COPY poetry.lock pyproject.toml .
+COPY poetry.lock pyproject.toml ./
 RUN poetry install --no-dev
 
 COPY . .
