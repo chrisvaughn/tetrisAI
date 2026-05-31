@@ -72,7 +72,16 @@ class Piece:
         self.current_shape_idx = (self.current_shape_idx + rot) % len(self.shapes)
 
     def clone(self):
-        return copy.deepcopy(self)
+        new_piece = Piece.__new__(Piece)
+        new_piece.name = self.name
+        new_piece.shapes = self.shapes  # immutable; never modified in-place
+        new_piece.default_shape_idx = self.default_shape_idx
+        new_piece._x = self._x
+        new_piece._y = self._y
+        new_piece.current_shape_idx = self.current_shape_idx
+        new_piece._detection_shapes = self._detection_shapes
+        new_piece._next_piece_detection_shape = self._next_piece_detection_shape
+        return new_piece
 
     @property
     def detection_shapes(self) -> List[np.ndarray]:

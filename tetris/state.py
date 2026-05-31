@@ -1,4 +1,3 @@
-import copy
 from typing import Union
 
 import cv2
@@ -102,7 +101,16 @@ class GameState:
         self.next_piece = next_piece
 
     def clone(self):
-        return copy.deepcopy(self)
+        new_state = GameState.__new__(GameState)
+        new_state.board = self.board.clone()
+        new_state.current_piece = self.current_piece.clone()
+        new_state.next_piece = self.next_piece  # not mutated during move evaluation
+        new_state._last_piece_y = self._last_piece_y
+        new_state._completed_lines = self._completed_lines
+        new_state._last_rn = self._last_rn
+        new_state._first_piece = self._first_piece
+        new_state.piece_list = self.piece_list  # not mutated during move evaluation
+        return new_state
 
     def new_piece(self) -> bool:
         if self.current_piece and self._first_piece:
@@ -213,12 +221,14 @@ class GameState:
         return np.any(self.board.board[0] != 0)
 
     def check_full_lines(self) -> int:
-        full_lines = np.count_nonzero(np.all(self.board.board != 0, 1))
-        if full_lines != 0:
-            removed_lines = self.board.board[np.all(self.board.board != 0, 1)]
+        full_row_mask = np.all(self.board.board != 0, axis=1)
+        full_lines = int(full_row_mask.sum())
+        if full_lines:
+            removed_lines = self.board.board[full_row_mask]
             removed_lines.fill(0)
-            clean_board = self.board.board[np.any(self.board.board == 0, 1)]
+            clean_board = self.board.board[~full_row_mask]
             self.board.board = np.vstack((removed_lines, clean_board))
+            self.board.updated()
         self._completed_lines += full_lines
         return full_lines
 
@@ -241,7 +251,7 @@ class GameState:
         return self.board.deep_well_count()
 
     def well_cells(self) -> int:
-        return self.board.deep_well_count()
+        return self.board.count_well_cells()
 
     def count_cells(self) -> (int, int):
         return self.board.count_cells()

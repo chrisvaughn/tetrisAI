@@ -1,4 +1,3 @@
-import copy
 from typing import List
 
 import numpy as np
@@ -15,7 +14,10 @@ class Board:
         self._peaks = None
 
     def clone(self):
-        return copy.deepcopy(self)
+        new_board = Board.__new__(Board)
+        new_board.board = self.board.copy()
+        new_board._peaks = None
+        return new_board
 
     def compare(self, other: "Board") -> bool:
         return np.array_equal(self.board, other.board)
@@ -41,46 +43,34 @@ class Board:
                 break
         return h
 
-    def _get_peaks(self) -> List[int]:
-        if self._peaks:
+    def _get_peaks(self) -> np.ndarray:
+        if self._peaks is not None:
             return self._peaks
 
-        peaks = [Board.rows] * Board.columns
-        for y in range(Board.rows):
-            for x in range(Board.columns):
-                if self.board[y][x] != 0 and peaks[x] == Board.rows:
-                    peaks[x] = y
+        nonzero = self.board != 0
+        has_content = nonzero.any(axis=0)
+        peaks = np.where(has_content, nonzero.argmax(axis=0), Board.rows)
         self._peaks = peaks
         return peaks
 
     def count_holes(self) -> (int, int):
         peaks = self._get_peaks()
-        holes = 0
-        weighted_holes = 0
-        for x in range(len(peaks)):
-            for y in range(Board.rows - 1, peaks[x], -1):
-                if self.board[y][x] == 0:
-                    holes += 1
-                    weighted_holes += y
+        rows = np.arange(Board.rows)[:, np.newaxis]
+        below_peak = rows > peaks
+        hole_mask = below_peak & (self.board == 0)
+        holes = int(hole_mask.sum())
+        weighted_holes = int((rows * hole_mask).sum())
         return holes, weighted_holes
 
     def cumulative_height(self) -> int:
-        peaks = self._get_peaks()
-        height = 0
-        for i in peaks:
-            height += 20 - i
-        return height
+        return int(np.sum(Board.rows - self._get_peaks()))
 
     def roughness(self) -> int:
-        peaks = self._get_peaks()
-        roughness = 0
-        for i in range(len(peaks) - 1):
-            roughness += abs(peaks[i] - peaks[i + 1])
-        return roughness
+        return int(np.sum(np.abs(np.diff(self._get_peaks()))))
 
     def relative_height(self) -> int:
         peaks = self._get_peaks()
-        return max(peaks) - min(peaks)
+        return int(peaks.max() - peaks.min())
 
     def game_over(self) -> bool:
         return self.board.all()
@@ -109,32 +99,20 @@ class Board:
 
     def count_well_cells(self) -> int:
         """
-        the number of cells within the wells
+        Total depth of all wells: for each column deeper than both neighbors,
+        the contribution is min(center - left, center - right) in row units.
+        Walls are treated as peak row 0 (full height).
         """
         peaks = self._get_peaks()
-        well_cells = 0
-        for i in range(len(peaks) - 1):
-            if i == 0:
-                left = 0
-            else:
-                left = peaks[i - 1]
-
-            center = peaks[i]
-
-            if i < 9:
-                right = peaks[i + 1]
-            else:
-                right = 0
-            well_cells += (left - center, right - center)
-        return well_cells
+        padded = np.pad(peaks, 1, constant_values=0)
+        depth = np.minimum(peaks - padded[:-2], peaks - padded[2:])
+        return int(depth[depth > 0].sum())
 
     def count_cells(self) -> (int, int):
         peaks = self._get_peaks()
-        cells = 0
-        weighted_cells = 0
-        for x in range(len(peaks)):
-            for y in range(Board.rows - 1, peaks[x], -1):
-                if self.board[y][x] == 1:
-                    cells += 1
-                    weighted_cells += y
+        rows = np.arange(Board.rows)[:, np.newaxis]
+        below_peak = rows > peaks
+        cell_mask = below_peak & (self.board == 1)
+        cells = int(cell_mask.sum())
+        weighted_cells = int((rows * cell_mask).sum())
         return cells, weighted_cells
