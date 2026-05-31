@@ -105,7 +105,7 @@ class Evaluator:
             try:
                 execute_move(state, rot, trans)
             except InvalidMove:
-                print(f"Invalid move {p} for piece { state.current_piece}")
+                print(f"Invalid move {p} for piece {state.current_piece}")
                 continue
 
             score, parameters = self.scoring_func(state)
@@ -167,8 +167,8 @@ class Evaluator:
         for rot in range(meaningful_rotations):
             if rot > 0:
                 piece.rot_cw()
-            l, r = piece.possible_translations()
-            options.append((rot, l, r))
+            left, r = piece.possible_translations()
+            options.append((rot, left, r))
 
         if self.parallel:
             imoves = get_pool().imap_unordered(self.execute_and_score, options)

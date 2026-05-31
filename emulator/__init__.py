@@ -137,9 +137,7 @@ class Emulator:
 
         time.sleep(5)
 
-        start_template = cv2.imread(
-            os.path.join(image_path, "push_start.png"), cv2.IMREAD_GRAYSCALE
-        )
+        start_template = cv2.imread(os.path.join(image_path, "push_start.png"), cv2.IMREAD_GRAYSCALE)
         while True:
             screen = self.capturer.latest_image()
             res = cv2.matchTemplate(screen, start_template, cv2.TM_CCOEFF_NORMED)

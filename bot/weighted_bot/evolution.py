@@ -62,9 +62,7 @@ class GA:
     def select_best(self, genomes: List[Genome], progress=True):
         pbar = None
         if progress:
-            pbar = ProgressBar(
-                widgets=[Percentage(), Bar(), ETA()], maxval=len(genomes)
-            ).start()
+            pbar = ProgressBar(widgets=[Percentage(), Bar(), ETA()], maxval=len(genomes)).start()
         best_performers = []
         for i, genome in enumerate(genomes):
             genome.fitness = self.fitness(genome.weights)
@@ -85,11 +83,7 @@ class GA:
                 parent = random.choice(mom_or_dad)
                 value = getattr(parent.weights, field)
                 if random.random() < self.mutation_rate:
-                    value = (
-                        value
-                        + random.random() * self.mutation_step * 2
-                        - self.mutation_step
-                    )
+                    value = value + random.random() * self.mutation_step * 2 - self.mutation_step
                 setattr(child_weights, field, value)
             children.append(Genome(weights=child_weights, id=self.genome_count))
             self.genome_count += 1

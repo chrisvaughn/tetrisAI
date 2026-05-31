@@ -1,5 +1,9 @@
-from .board import Board
-from .game import Game
-from .pieces import Piece, Tetrominoes
-from .recorder import GameRecorder, GameRecording, TrainingRecorder
-from .state import GameState, InvalidMove
+from .board import Board as Board
+from .game import Game as Game
+from .pieces import Piece as Piece
+from .pieces import Tetrominoes as Tetrominoes
+from .recorder import GameRecorder as GameRecorder
+from .recorder import GameRecording as GameRecording
+from .recorder import TrainingRecorder as TrainingRecorder
+from .state import GameState as GameState
+from .state import InvalidMove as InvalidMove

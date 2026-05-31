@@ -46,9 +46,7 @@ class GameState:
 
     def display(self):
         block_size = 28
-        virtual_board = np.zeros(
-            (Board.rows * block_size, Board.columns * block_size, 3), dtype=np.uint8
-        )
+        virtual_board = np.zeros((Board.rows * block_size, Board.columns * block_size, 3), dtype=np.uint8)
         for y, cols in enumerate(self.board.board):
             for x, cell in enumerate(cols):
                 cv2.rectangle(
@@ -140,11 +138,7 @@ class GameState:
         py = py + moves
         for (y, x), value in np.ndenumerate(self.current_piece.shape):
             if value != 0 and py + y >= 0:
-                if (
-                    py + y >= self.board.rows
-                    or px + x >= self.board.columns
-                    or self.board.board[py + y, px + x] != 0
-                ):
+                if py + y >= self.board.rows or px + x >= self.board.columns or self.board.board[py + y, px + x] != 0:
                     return False
         return True
 
@@ -162,10 +156,7 @@ class GameState:
         px = px + moves
         for (y, x), value in np.ndenumerate(self.current_piece.shape):
             if value != 0 and px + x >= 0 and py + y >= 0:
-                if (
-                    px + x >= self.board.columns
-                    or self.board.board[py + y, px + x] != 0
-                ):
+                if px + x >= self.board.columns or self.board.board[py + y, px + x] != 0:
                     return False
         return True
 

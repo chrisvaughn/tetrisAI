@@ -1,5 +1,4 @@
-import time
-from typing import List, Optional, Tuple
+from typing import Optional, Tuple
 
 from tetris import Board, GameState, InvalidMove, Piece
 
@@ -31,21 +30,15 @@ class WeightedBot(BaseBot):
         """Update the bot's knowledge of the current game state"""
         super().update_state(state)
         if self._evaluator is None:
-            self._evaluator = Evaluator(
-                state, self.weights, self.parallel, self.scoring
-            )
+            self._evaluator = Evaluator(state, self.weights, self.parallel, self.scoring)
         else:
             self._evaluator.update_state(state)
 
-    def update_from_detection(
-        self, board: Board, current_piece: Piece, next_piece: Optional[Piece] = None
-    ):
+    def update_from_detection(self, board: Board, current_piece: Piece, next_piece: Optional[Piece] = None):
         """Update the bot's state from detected board and piece information"""
         super().update_from_detection(board, current_piece, next_piece)
         if self._evaluator is None:
-            self._evaluator = Evaluator(
-                self._current_state, self.weights, self.parallel, self.scoring
-            )
+            self._evaluator = Evaluator(self._current_state, self.weights, self.parallel, self.scoring)
         else:
             self._evaluator.update_state(self._current_state)
 
@@ -74,7 +67,6 @@ class WeightedBot(BaseBot):
         if self._evaluator is None:
             raise ValueError("No evaluator available - call update_state first")
 
-        start_time = time.time()
         best_move, time_taken, moves_considered = self._evaluator.best_move(debug)
 
         # Convert the Evaluator's Move to our BotMove

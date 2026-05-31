@@ -90,9 +90,7 @@ class Keyboard:
         keypress.released_at = release_at
         self.keylog.capture(keypress)
 
-    def press_key(
-        self, key: str, wait_min_before_press: bool = False, extra_wait: float = 0.0
-    ):
+    def press_key(self, key: str, wait_min_before_press: bool = False, extra_wait: float = 0.0):
         if wait_min_before_press:
             wait_time = max(
                 0.0,

@@ -116,9 +116,7 @@ def _scan_image(num_rows: int, num_columns: int, image: np.ndarray) -> np.ndarra
             x_end_pos = round(x_start_pos + block_width - 1)
             y_end_pos = round(y_start_pos + block_height - 1)
             # Takes the pixel region containing the current block
-            current_block = image[
-                y_start_pos : y_end_pos + 1, x_start_pos : x_end_pos + 1
-            ]
+            current_block = image[y_start_pos : y_end_pos + 1, x_start_pos : x_end_pos + 1]
 
             # Takes a set of 4 (2 x 2) pixels from the center of a block
             block_middle = current_block[

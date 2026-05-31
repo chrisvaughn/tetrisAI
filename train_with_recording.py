@@ -12,13 +12,13 @@ Usage:
     # View recordings after training
     python visualization/replay_viewer.py ./recordings --evolution --max-gen 50
 """
+
 import argparse
-import time
 from pathlib import Path
 from random import randint
 
 from bot import GA, RandomBot, WeightedBot, Weights, get_pool
-from tetris import Game, GameRecorder, Piece, Tetrominoes, TrainingRecorder
+from tetris import Game, Piece, Tetrominoes, TrainingRecorder
 
 run_evaluator_in_parallel = True
 
@@ -50,9 +50,7 @@ def main(args):
 
     # Setup recording
     recording_dir = Path(args.recording_dir)
-    training_recorder = TrainingRecorder(
-        recording_dir, snapshot_interval=args.snapshot_interval
-    )
+    training_recorder = TrainingRecorder(recording_dir, snapshot_interval=args.snapshot_interval)
 
     print(f"Training {args.bot_model} model with recording...")
     print(f"Fitness method: {args.fitness_method}")
@@ -70,12 +68,8 @@ def main(args):
 
     # Create fitness function with recording
     fitness_methods = {
-        "score": create_fitness_with_recording(
-            piece_lists, "score", args.scoring, args.bot_model, training_recorder
-        ),
-        "lines": create_fitness_with_recording(
-            piece_lists, "lines", args.scoring, args.bot_model, training_recorder
-        ),
+        "score": create_fitness_with_recording(piece_lists, "score", args.scoring, args.bot_model, training_recorder),
+        "lines": create_fitness_with_recording(piece_lists, "lines", args.scoring, args.bot_model, training_recorder),
     }
 
     if args.save_file:
@@ -93,13 +87,11 @@ def main(args):
     print("All Done")
     print(best)
     print(f"\nRecordings saved to: {recording_dir}")
-    print(f"\nTo view recordings, run:")
+    print("\nTo view recordings, run:")
     print(f"  python visualization/replay_viewer.py {recording_dir} --evolution")
 
 
-def create_bot(
-    bot_model: str, weights: Weights = None, parallel: bool = True, scoring: str = "v2"
-):
+def create_bot(bot_model: str, weights: Weights = None, parallel: bool = True, scoring: str = "v2"):
     """Create a bot instance based on the bot model"""
     if bot_model == "WeightedBot":
         if weights is None:
@@ -111,9 +103,7 @@ def create_bot(
         raise ValueError(f"Unknown bot model: {bot_model}")
 
 
-def create_fitness_with_recording(
-    piece_lists, result_key, scoring, bot_model, training_recorder
-):
+def create_fitness_with_recording(piece_lists, result_key, scoring, bot_model, training_recorder):
     """Create fitness function that also records game states."""
     # Create a single bot instance to reuse
     bot = create_bot(bot_model, parallel=run_evaluator_in_parallel, scoring=scoring)
@@ -216,9 +206,7 @@ def evaluate_with_recording(
                 "moves_considered": moves_considered,
             }
 
-            recorder.record_state(
-                game.state, game.score, game.lines, game.level, move_info=move_info
-            )
+            recorder.record_state(game.state, game.score, game.lines, game.level, move_info=move_info)
 
         if move_sequence:
             moves = move_sequence.pop(0)
@@ -267,9 +255,7 @@ def evaluate_without_recording(bot: WeightedBot, piece_list: list[Piece]):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="train a tetris bot with game recording"
-    )
+    parser = argparse.ArgumentParser(description="train a tetris bot with game recording")
     parser.add_argument(
         "--no-parallel",
         dest="no_parallel",
@@ -296,9 +282,7 @@ if __name__ == "__main__":
         default=100,
         help="number of iterations to average top 3rd",
     )
-    parser.add_argument(
-        "--parallel-runners", dest="num_of_parallel", type=int, default=4
-    )
+    parser.add_argument("--parallel-runners", dest="num_of_parallel", type=int, default=4)
     parser.add_argument("--scoring", choices=["v1", "v2"], default="v2")
     parser.add_argument(
         "--bot-model",
