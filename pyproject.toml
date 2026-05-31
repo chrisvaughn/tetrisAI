@@ -1,32 +1,37 @@
-[tool.poetry]
+[project]
 name = "tetrisai"
 version = "0.1.0"
 description = ""
-authors = ["Chris Vaughn <chris@cvaughn.com>"]
-package-mode = false
+requires-python = ">=3.14"
+dependencies = [
+    "numpy>=2",
+    "opencv-python>=4",
+    "progressbar>=2.5",
+]
 
-[tool.poetry.dependencies]
-python = ">=3.14"
-numpy = "^2"
-opencv-python = "^4"
-progressbar = "^2.5"
+[project.optional-dependencies]
+macOS = [
+    "pyobjc-framework-Quartz>=10",
+    "mss>=9",
+    "applescript>=2021",
+]
 
-pyobjc-framework-Quartz = { version = "^10", optional = true }
-mss = { version = "^9", optional = true }
-applescript = { version = "^2021", optional = true }
+[dependency-groups]
+dev = [
+    "ruff",
+    "pytest",
+    "pytest-cov",
+]
 
-[tool.poetry.group.dev.dependencies]
-black = "*"
-isort = "*"
-pytest = "*"
-pytest-cov = "*"
+[tool.pytest.ini_options]
+pythonpath = ["."]
 
-[tool.poetry.extras]
-macOS = ["pyobjc-framework-Quartz", "mss", "applescript"]
+[tool.ruff]
+line-length = 120
 
-[build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+[tool.ruff.lint]
+select = ["E", "F", "I"]
 
-[tool.isort]
-profile = "black"
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"

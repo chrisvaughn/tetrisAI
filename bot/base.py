@@ -1,8 +1,6 @@
 from abc import ABC, abstractmethod
 from itertools import zip_longest
-from typing import List, Optional, Tuple, Union
-
-import numpy as np
+from typing import List, Optional, Tuple
 
 from tetris import Board, GameState, Piece
 
@@ -71,9 +69,7 @@ class BaseBot(ABC):
         self._current_state = state
         self._detection_count += 1
 
-    def update_from_detection(
-        self, board: Board, current_piece: Piece, next_piece: Optional[Piece] = None
-    ):
+    def update_from_detection(self, board: Board, current_piece: Piece, next_piece: Optional[Piece] = None):
         """Update the bot's state from detected board and piece information"""
         if self._current_state is None:
             self._current_state = GameState()

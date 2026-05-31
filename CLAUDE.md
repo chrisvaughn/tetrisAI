@@ -12,7 +12,7 @@ This is a Tetris AI project implementing bot strategies using Genetic Algorithms
 
 ```bash
 # Setup with pyenv
-export py_version=3.12
+export py_version=3.14
 pyenv install $py_version --skip-existing
 pyenv uninstall -f tetrisAI
 pyenv virtualenv $py_version tetrisAI
@@ -23,10 +23,10 @@ pyenv local tetrisAI
 
 ```bash
 # For macOS with emulator support
-poetry install -E macOS
+uv sync --extra macOS
 
 # For Linux training environment (no emulator)
-poetry install
+uv sync
 ```
 
 ## Running the Code
@@ -92,14 +92,14 @@ pytest --cov=tetris --cov=bot
 ### Code Formatting
 
 ```bash
-# Format code
-black .
+# Format code and sort imports
+ruff format .
 
-# Sort imports
-isort .
+# Lint and auto-fix
+ruff check --fix .
 
 # Run both (common workflow)
-isort . && black .
+ruff check --fix . && ruff format .
 ```
 
 ## Architecture

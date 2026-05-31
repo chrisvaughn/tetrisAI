@@ -1,8 +1,8 @@
 import random
 import time
-from typing import List, Tuple
+from typing import Tuple
 
-from tetris import Board, GameState, InvalidMove, Piece
+from tetris import InvalidMove
 
 from ..base import BaseBot, BotMove
 
@@ -88,9 +88,7 @@ class RandomBot(BaseBot):
         time_taken = time.time() - start_time
 
         if debug:
-            print(
-                f"RandomBot selected move: rotations={rot}, translation={trans}, score={score}"
-            )
+            print(f"RandomBot selected move: rotations={rot}, translation={trans}, score={score}")
 
         return best_move, time_taken, len(possible_moves)
 

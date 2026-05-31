@@ -6,10 +6,9 @@ RUN apt update && apt install -y \
   libglib2.0-0 \
   && rm -rf /var/lib/apt/lists/*
 
-RUN pip3 install poetry
-RUN poetry config virtualenvs.create false
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
-COPY poetry.lock pyproject.toml ./
-RUN poetry install --no-dev
+COPY uv.lock pyproject.toml ./
+RUN uv sync --no-dev --no-install-project
 
 COPY . .

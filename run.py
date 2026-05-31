@@ -87,7 +87,8 @@ def run_in_memory(args, bot):
             move_sequence = best_move.to_sequence()
             if args.stats:
                 print(
-                    f"Move {move_count}: Piece: {game.state.current_piece.name}, Considered {moves_considered} moves in {int(time_taken * 1000)} ms."
+                    f"Move {move_count}: Piece: {game.state.current_piece.name}, "
+                    f"Considered {moves_considered} moves in {int(time_taken * 1000)} ms."
                 )
                 print(f"\tSequence: {move_sequence}")
         if move_sequence:
@@ -132,11 +133,7 @@ def run_with_emulator(args, bot):
 
         gs.update(detector.board, detector.current_piece, detector.next_piece)
         if gs.new_piece():
-            if (
-                expected_state is not None
-                and not gs.board.compare(expected_state.board)
-                or next_best_move is None
-            ):
+            if expected_state is not None and not gs.board.compare(expected_state.board) or next_best_move is None:
                 if expected_state is not None and args.debug:
                     print("Board state not the same")
                     print("Expected:")
@@ -161,12 +158,11 @@ def run_with_emulator(args, bot):
             piece_stats[gs.current_piece.name] += 1
             move_sequence = best_move.to_sequence()
             # Use the end state from the bot move
-            expected_state = (
-                best_move.end_state.clone() if best_move.end_state else gs.clone()
-            )
+            expected_state = best_move.end_state.clone() if best_move.end_state else gs.clone()
             if args.stats:
                 print(
-                    f"Move {move_count}: Piece: {gs.current_piece.name}, Considered {moves_considered} moves in {int(time_taken * 1000)} ms."
+                    f"Move {move_count}: Piece: {gs.current_piece.name}, "
+                    f"Considered {moves_considered} moves in {int(time_taken * 1000)} ms."
                 )
                 print(f"\tSequence: {move_sequence}")
             # Track lines completed if available
@@ -183,9 +179,7 @@ def run_with_emulator(args, bot):
                 next_piece.set_position(6, 1)
                 next_piece_gs.update(expected_state.board, next_piece, None)
                 bot.update_state(next_piece_gs)
-                next_best_move, next_time_taken, next_moves_considered = (
-                    bot.get_best_move(args.debug)
-                )
+                next_best_move, next_time_taken, next_moves_considered = bot.get_best_move(args.debug)
 
         if move_sequence:
             move_sequence_executed = True
@@ -204,12 +198,8 @@ def run_with_emulator(args, bot):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="run tetris bot")
-    parser.add_argument(
-        "--emulator", action="store_true", default=False, help="run with emulator"
-    )
-    parser.add_argument(
-        "--stats", action="store_true", default=False, help="print move stats display"
-    )
+    parser.add_argument("--emulator", action="store_true", default=False, help="run with emulator")
+    parser.add_argument("--stats", action="store_true", default=False, help="print move stats display")
     parser.add_argument(
         "--seed",
         default=int(time.time() * 100000),
@@ -238,12 +228,8 @@ if __name__ == "__main__":
         default=False,
         help="applies cheat to emulator to limit speed to level 19",
     )
-    parser.add_argument(
-        "--sound", action="store_true", default=False, help="enable all sounds"
-    )
-    parser.add_argument(
-        "--music", action="store_true", default=False, help="play music"
-    )
+    parser.add_argument("--sound", action="store_true", default=False, help="enable all sounds")
+    parser.add_argument("--music", action="store_true", default=False, help="play music")
     parser.add_argument("--level", default=19, type=int, help="level to start at")
     parser.add_argument(
         "--bot-model",

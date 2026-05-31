@@ -4,6 +4,7 @@ Validation metrics for training analysis.
 Provides tools to analyze training progress, detect convergence,
 and compare bot performance across generations.
 """
+
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -44,9 +45,7 @@ class TrainingAnalysis:
         """Add metrics for a generation."""
         self.generations.append(metrics)
 
-    def is_converged(
-        self, window: int = 10, threshold: float = 0.01
-    ) -> bool:
+    def is_converged(self, window: int = 10, threshold: float = 0.01) -> bool:
         """
         Check if training has converged.
 
@@ -73,9 +72,7 @@ class TrainingAnalysis:
 
         return cv < threshold
 
-    def get_convergence_generation(
-        self, window: int = 10, threshold: float = 0.01
-    ) -> Optional[int]:
+    def get_convergence_generation(self, window: int = 10, threshold: float = 0.01) -> Optional[int]:
         """
         Find the generation where training converged.
 
@@ -119,9 +116,7 @@ class TrainingAnalysis:
 
         return rates
 
-    def get_plateaus(
-        self, min_length: int = 5, threshold: float = 0.001
-    ) -> List[tuple[int, int]]:
+    def get_plateaus(self, min_length: int = 5, threshold: float = 0.001) -> List[tuple[int, int]]:
         """
         Find plateaus in training progress.
 
@@ -179,23 +174,24 @@ class TrainingAnalysis:
         last = self.generations[-1]
 
         print(f"\nGenerations: {len(self.generations)}")
-        print(f"\nFitness Progress:")
+        print("\nFitness Progress:")
         print(f"  Initial best: {first.best_fitness:.2f}")
         print(f"  Final best:   {last.best_fitness:.2f}")
         print(
-            f"  Improvement:  {last.best_fitness - first.best_fitness:.2f} ({(last.best_fitness/first.best_fitness - 1)*100:.1f}%)"
+            f"  Improvement:  {last.best_fitness - first.best_fitness:.2f}"
+            " ({(last.best_fitness/first.best_fitness - 1)*100:.1f}%)"
         )
 
-        print(f"\nLines Cleared:")
+        print("\nLines Cleared:")
         print(f"  Initial best: {first.best_lines}")
         print(f"  Final best:   {last.best_lines}")
         print(f"  Improvement:  {last.best_lines - first.best_lines}")
 
-        print(f"\nScore:")
+        print("\nScore:")
         print(f"  Initial best: {first.best_score:,}")
         print(f"  Final best:   {last.best_score:,}")
 
-        print(f"\nBoard Metrics (final generation averages):")
+        print("\nBoard Metrics (final generation averages):")
         print(f"  Avg holes:     {last.avg_holes:.1f}")
         print(f"  Avg height:    {last.avg_height:.1f}")
         print(f"  Avg bumpiness: {last.avg_bumpiness:.1f}")
@@ -214,14 +210,12 @@ class TrainingAnalysis:
         if plateaus:
             print(f"\nPlateaus detected: {len(plateaus)}")
             for start, end in plateaus[:3]:  # Show first 3
-                print(f"  Generations {start}-{end} (length: {end-start+1})")
+                print(f"  Generations {start}-{end} (length: {end - start + 1})")
 
         print("=" * 60 + "\n")
 
 
-def calculate_generation_metrics(
-    recordings: List[GameRecording], generation: int
-) -> GenerationMetrics:
+def calculate_generation_metrics(recordings: List[GameRecording], generation: int) -> GenerationMetrics:
     """
     Calculate metrics for a generation from recordings.
 
@@ -279,10 +273,7 @@ def calculate_generation_metrics(
                 all_eval_times.append(snapshot.evaluation_time_ms)
 
             # Track move patterns for diversity
-            if (
-                snapshot.move_rotations is not None
-                and snapshot.move_translation is not None
-            ):
+            if snapshot.move_rotations is not None and snapshot.move_translation is not None:
                 pattern = (snapshot.move_rotations, snapshot.move_translation)
                 move_patterns[pattern] = move_patterns.get(pattern, 0) + 1
 
@@ -352,9 +343,7 @@ def analyze_training(recording_dir: Path, max_generations: int) -> TrainingAnaly
     return analysis
 
 
-def compare_runs(
-    run_dirs: List[Path], labels: Optional[List[str]] = None
-) -> Dict[str, TrainingAnalysis]:
+def compare_runs(run_dirs: List[Path], labels: Optional[List[str]] = None) -> Dict[str, TrainingAnalysis]:
     """
     Compare multiple training runs.
 
@@ -366,7 +355,7 @@ def compare_runs(
         Dictionary mapping label to TrainingAnalysis
     """
     if labels is None:
-        labels = [f"Run {i+1}" for i in range(len(run_dirs))]
+        labels = [f"Run {i + 1}" for i in range(len(run_dirs))]
 
     results = {}
     for run_dir, label in zip(run_dirs, labels):
@@ -436,12 +425,8 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Analyze training metrics")
     parser.add_argument("recording_dir", type=Path, help="Recording directory")
-    parser.add_argument(
-        "--max-gen", type=int, default=100, help="Maximum generation to analyze"
-    )
-    parser.add_argument(
-        "--export-csv", type=Path, help="Export metrics to CSV file"
-    )
+    parser.add_argument("--max-gen", type=int, default=100, help="Maximum generation to analyze")
+    parser.add_argument("--export-csv", type=Path, help="Export metrics to CSV file")
 
     args = parser.parse_args()
 

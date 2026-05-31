@@ -3,6 +3,7 @@ Game state recording for training visualization and analysis.
 
 Records complete game states during training for later replay and analysis.
 """
+
 import gzip
 import pickle
 from dataclasses import dataclass, field
@@ -11,7 +12,6 @@ from typing import List, Optional, Union
 
 import numpy as np
 
-from .pieces import Piece
 from .state import GameState
 
 
@@ -167,9 +167,7 @@ class GameRecorder:
 
     def should_record(self) -> bool:
         """Check if we should record current state."""
-        return (
-            self.piece_counter - self.last_snapshot_piece >= self.snapshot_interval
-        )
+        return self.piece_counter - self.last_snapshot_piece >= self.snapshot_interval
 
     def record_state(
         self,
@@ -211,9 +209,7 @@ class GameRecorder:
             piece_number=self.piece_counter,
             board_state=game_state.board.board.copy(),
             current_piece_name=current_piece.name if current_piece else "",
-            current_piece_rotation=(
-                current_piece.current_shape_idx if current_piece else 0
-            ),
+            current_piece_rotation=(current_piece.current_shape_idx if current_piece else 0),
             current_piece_x=current_piece._x if current_piece else 0,
             current_piece_y=current_piece._y if current_piece else 0,
             next_piece_name=next_piece.name if next_piece else None,
@@ -244,9 +240,7 @@ class GameRecorder:
         """Increment piece counter."""
         self.piece_counter += 1
 
-    def finalize(
-        self, final_lines: int, final_score: int, piece_stats: dict, line_combos: dict
-    ):
+    def finalize(self, final_lines: int, final_score: int, piece_stats: dict, line_combos: dict):
         """
         Finalize recording with final statistics.
 
@@ -324,9 +318,7 @@ class TrainingRecorder:
         files = self.get_generation_files(generation)
         return [GameRecording.load(f) for f in files]
 
-    def load_best_per_generation(
-        self, max_generations: int
-    ) -> List[Optional[GameRecording]]:
+    def load_best_per_generation(self, max_generations: int) -> List[Optional[GameRecording]]:
         """
         Load the best recording from each generation.
 

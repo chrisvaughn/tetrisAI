@@ -44,9 +44,7 @@ def capture_latest_image_into_shared_memory(
 
 class CaptureController:
     def __init__(self, emulator_name, fps=50, display_fps=False):
-        self.shm = shared_memory.SharedMemory(
-            create=True, size=shape[0] * shape[1] * dtype().itemsize
-        )
+        self.shm = shared_memory.SharedMemory(create=True, size=shape[0] * shape[1] * dtype().itemsize)
         self.enabled = True
         self.queue = Queue(1)
         self.process = Process(
@@ -97,28 +95,20 @@ class Capture:
         self.enabled = False
 
     def _location(self, bring_to_front=False):
-        wl = CGWindowListCopyWindowInfo(
-            kCGWindowListOptionOnScreenOnly, kCGNullWindowID
-        )
+        wl = CGWindowListCopyWindowInfo(kCGWindowListOptionOnScreenOnly, kCGNullWindowID)
         for v in wl:
             if self.emulator_name in v.valueForKey_("kCGWindowOwnerName"):
                 if v.valueForKey_("kCGWindowBounds") is None:
                     return None
                 if bring_to_front:
                     pid = int(v.valueForKey_("kCGWindowOwnerPID"))
-                    x = NSRunningApplication.runningApplicationWithProcessIdentifier_(
-                        pid
-                    )
+                    x = NSRunningApplication.runningApplicationWithProcessIdentifier_(pid)
                     x.activateWithOptions_(NSApplicationActivateIgnoringOtherApps)
                 return {
                     "x": int(v.valueForKey_("kCGWindowBounds").valueForKey_("X")),
                     "y": int(v.valueForKey_("kCGWindowBounds").valueForKey_("Y")),
-                    "height": int(
-                        v.valueForKey_("kCGWindowBounds").valueForKey_("Height")
-                    ),
-                    "width": int(
-                        v.valueForKey_("kCGWindowBounds").valueForKey_("Width")
-                    ),
+                    "height": int(v.valueForKey_("kCGWindowBounds").valueForKey_("Height")),
+                    "width": int(v.valueForKey_("kCGWindowBounds").valueForKey_("Width")),
                 }
 
     def get_screenshot(self):

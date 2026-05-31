@@ -11,13 +11,13 @@ pyenv local tetrisAI
 Get dependencies on macOS for running the AI with an emulator:
 
 ```bash
-poetry install -E macOS
+uv sync --extra macOS
 ```
 
 Get dependencies on linux for training the bot
 
 ```bash
-poetry install
+uv sync
 ```
 
 <https://github.com/IdreesInc/TetNet/blob/master/tetnet.js>

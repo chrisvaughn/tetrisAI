@@ -2,7 +2,7 @@
 import argparse
 from random import randint
 
-from bot import GA, WeightedBot, RandomBot, Weights, get_pool
+from bot import GA, RandomBot, WeightedBot, Weights, get_pool
 from tetris import Game, Piece, Tetrominoes
 
 run_evaluator_in_parallel = True
@@ -32,14 +32,14 @@ def main(args):
         run_evaluator_in_parallel = False
     if run_evaluator_in_parallel:
         get_pool(args.num_of_parallel)
-    
+
     print(f"Training {args.bot_model} model...")
     print(f"Fitness method: {args.fitness_method}")
     print(f"Scoring: {args.scoring}")
     print(f"Population: {args.population}, Generations: {args.generations}")
     print(f"Parallel: {run_evaluator_in_parallel}")
     print("-" * 50)
-    
+
     piece_lists = []
     for i in range(args.num_iterations):
         piece_lists.append(generate_piece_lists(1000, randint(0, 10000000)))
@@ -78,10 +78,10 @@ def create_bot(bot_model: str, weights: Weights = None, parallel: bool = True, s
 def top_3rd_avg_of(piece_lists, result_key, scoring, bot_model):
     # Create a single bot instance to reuse
     bot = create_bot(bot_model, parallel=run_evaluator_in_parallel, scoring=scoring)
-    
+
     def avg_of_inner(weights):
         # Update the bot's weights instead of creating a new instance
-        if hasattr(bot, 'update_weights'):
+        if hasattr(bot, "update_weights"):
             bot.update_weights(weights)
         results = []
         for piece_list in piece_lists:
@@ -162,15 +162,10 @@ if __name__ == "__main__":
         default=100,
         help="number of iterations to average top 3rd",
     )
-    parser.add_argument(
-        "--parallel-runners", dest="num_of_parallel", type=int, default=4
-    )
+    parser.add_argument("--parallel-runners", dest="num_of_parallel", type=int, default=4)
     parser.add_argument("--scoring", choices=["v1", "v2"], default="v2")
     parser.add_argument(
-        "--bot-model", 
-        choices=["WeightedBot", "RandomBot"], 
-        default="WeightedBot",
-        help="bot model to train"
+        "--bot-model", choices=["WeightedBot", "RandomBot"], default="WeightedBot", help="bot model to train"
     )
     args = parser.parse_args()
     main(args)

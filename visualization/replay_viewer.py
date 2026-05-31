@@ -3,9 +3,9 @@ Replay visualization system for viewing multiple training runs simultaneously.
 
 Allows side-by-side comparison of bot performance across generations.
 """
-import time
+
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import List
 
 import cv2
 import numpy as np
@@ -54,9 +54,7 @@ class ReplayRenderer:
         self.total_width = self.board_width + self.info_width
         self.total_height = self.board_height + self.next_height
 
-    def render_snapshot(
-        self, recording: GameRecording, snapshot_idx: int
-    ) -> np.ndarray:
+    def render_snapshot(self, recording: GameRecording, snapshot_idx: int) -> np.ndarray:
         """
         Render a specific snapshot to an image.
 
@@ -151,9 +149,7 @@ class ReplayRenderer:
                         cv2.rectangle(img, (x1, y1), (x2, y2), color, -1)
                         cv2.rectangle(img, (x1, y1), (x2, y2), (255, 255, 255), 1)
 
-    def _draw_info(
-        self, img: np.ndarray, recording: GameRecording, snapshot
-    ):
+    def _draw_info(self, img: np.ndarray, recording: GameRecording, snapshot):
         """Draw info panel."""
         x_offset = self.board_width + 5
         y = 20
@@ -463,9 +459,7 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser(description="View training replay recordings")
-    parser.add_argument(
-        "recording_dir", type=Path, help="Directory containing recordings"
-    )
+    parser.add_argument("recording_dir", type=Path, help="Directory containing recordings")
     parser.add_argument(
         "--generations",
         type=int,
