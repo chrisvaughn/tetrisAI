@@ -43,6 +43,7 @@ Your current GA approach has produced strong results, but has inherent limitatio
 - **Multiple Open-Source Successes**: Several PyTorch implementations demonstrate that DQN can achieve strong performance [[vietnh1009/Tetris-deep-Q-learning-pytorch]](https://github.com/vietnh1009/Tetris-deep-Q-learning-pytorch), [[nuno-faria/tetris-ai]](https://github.com/nuno-faria/tetris-ai)
 
 **Key Techniques**:
+
 - Experience replay for sample efficiency
 - Epsilon-greedy exploration (ε starts at 1.0, decays to 0)
 - Discount factor (γ ≈ 0.95) for future rewards
@@ -53,6 +54,7 @@ Your current GA approach has produced strong results, but has inherent limitatio
 We'll build three models in sequence, each adding complexity:
 
 ### Phase 1: Supervised Learning Baseline (1-2 weeks)
+
 **Goal**: Learn to mimic your best GA bot
 
 **Phase 2: Deep Q-Network (DQN) (2-4 weeks)
@@ -66,9 +68,11 @@ We'll build three models in sequence, each adding complexity:
 ## Phase 1: Supervised Learning Baseline
 
 ### Objective
+
 Create a neural network that mimics your best WeightedBot by learning from its decisions. This validates your infrastructure and provides a baseline before tackling the harder RL problem.
 
 ### Why Start Here?
+
 1. **Simpler Problem**: Supervised learning is easier to debug than RL
 2. **Data Generation**: Leverages your already-optimized GA weights
 3. **Upper Bound**: Shows best-case performance if network perfectly learns the weighted evaluation
@@ -92,20 +96,24 @@ Output Layer (1 unit, Linear)
 ```
 
 **Input Representation**:
+
 - Flattened 10×20 board (200 binary values: 0=empty, 1=filled)
 - Simple and interpretable
 - Network must learn spatial patterns from scratch
 
 **Output**:
+
 - Single value: predicted "goodness" of board state after move
 - Evaluate all legal moves, pick highest scoring
 
 **Loss Function**: Mean Squared Error (MSE)
+
 - Target = score from WeightedBot's evaluation function
 
 ### Training Process
 
 1. **Data Collection**:
+
    ```python
    # Run WeightedBotLines for N games
    # For each piece placement decision:
@@ -127,11 +135,13 @@ Output Layer (1 unit, Linear)
    - Expect: 70-90% of WeightedBot performance (some information loss is normal)
 
 ### Expected Outcomes
+
 - **Best case**: Network matches or slightly exceeds WeightedBot (may generalize better)
 - **Typical case**: Network achieves 80-85% of WeightedBot performance
 - **Success metric**: Network clearly plays better than random bot
 
 ### Key Files to Create
+
 - `bot/neural_bot/supervised_model.py`: Network architecture
 - `bot/neural_bot/supervised_bot.py`: Bot implementation
 - `bot/neural_bot/data_collection.py`: Generate training data from WeightedBot
@@ -142,6 +152,7 @@ Output Layer (1 unit, Linear)
 ## Phase 2: Deep Q-Network (DQN)
 
 ### Objective
+
 Train a network to learn optimal policy through self-play using reinforcement learning, without requiring labeled data from human or bot experts.
 
 ### Why DQN?
@@ -156,9 +167,11 @@ Train a network to learn optimal policy through self-play using reinforcement le
 **State (S)**: Current board configuration + current piece + next piece
 
 **Action (A)**: Discrete move = (rotation, translation) pair
+
 - ~68 possible actions per piece (4 rotations × 17 translations)
 
 **Reward (R)**: Design options (experiment with these):
+
 1. **Sparse**: +1 per line cleared, -1 for game over
 2. **Dense**: +1 per line, +0.01 per move survived, -1 for game over
 3. **Score-based**: Actual NES Tetris score (includes level multiplier)
@@ -180,6 +193,7 @@ Output Layer (68 units, Linear)  # Q-value for each possible action
 ```
 
 **Input Representation**:
+
 - Board state: 10×20 = 200 values (binary or normalized)
 - Current piece: 7 values (one-hot encoding of piece type)
 - Next piece: 7 values (one-hot encoding)
@@ -187,11 +201,13 @@ Output Layer (68 units, Linear)  # Q-value for each possible action
 - Total: 218 values
 
 **Alternative: Add hand-crafted features**:
+
 - Include your 11 board metrics (holes, height, etc.) as additional inputs
 - This "bootstraps" learning with domain knowledge
 - Allows network to focus on learning strategy rather than feature extraction
 
 **Output**:
+
 - Q-value for each valid (rotation, translation) combination
 - Use mask to prevent invalid actions
 - Select action with highest Q-value (exploitation) or random (exploration)
@@ -199,6 +215,7 @@ Output Layer (68 units, Linear)  # Q-value for each possible action
 ### DQN Algorithm Components
 
 #### 1. Experience Replay
+
 ```python
 # Store transitions in replay buffer
 replay_buffer = deque(maxlen=20000)
@@ -209,11 +226,13 @@ batch = random.sample(replay_buffer, batch_size=512)
 ```
 
 **Why it works**:
+
 - Breaks correlation between consecutive samples
 - Allows learning from rare events multiple times
 - Improves sample efficiency
 
 #### 2. Target Network
+
 ```python
 # Main network: updated every step
 q_network = DQN()
@@ -224,11 +243,13 @@ target_network.load_state_dict(q_network.state_dict())
 ```
 
 **Why it works**:
+
 - Stabilizes training by fixing the target for several updates
 - Prevents "chasing a moving target" problem
 - Critical for convergence
 
 #### 3. Epsilon-Greedy Exploration
+
 ```python
 epsilon = 1.0  # Start fully random
 epsilon_min = 0.01
@@ -243,6 +264,7 @@ epsilon = max(epsilon_min, epsilon * epsilon_decay)
 ```
 
 **Why it works**:
+
 - Early training: explores different strategies
 - Late training: exploits learned policy
 - Balances exploration vs. exploitation
@@ -250,6 +272,7 @@ epsilon = max(epsilon_min, epsilon * epsilon_decay)
 ### Training Process
 
 #### Hyperparameters (starting point)
+
 ```python
 REPLAY_BUFFER_SIZE = 20000
 BATCH_SIZE = 512
@@ -263,6 +286,7 @@ EPISODES = 10000  # ~10k games
 ```
 
 #### Training Loop
+
 ```python
 for episode in range(EPISODES):
     state = reset_game()
@@ -303,6 +327,7 @@ for episode in range(EPISODES):
 ```
 
 #### Q-Learning Update Rule
+
 ```python
 # Compute target Q-values
 with torch.no_grad():
@@ -324,6 +349,7 @@ optimizer.step()
 Test multiple reward functions to see what works best:
 
 **Option 1: Line-focused**
+
 ```python
 reward = lines_cleared  # 0, 1, 2, 3, or 4
 if game_over:
@@ -331,6 +357,7 @@ if game_over:
 ```
 
 **Option 2: Survival + Lines**
+
 ```python
 reward = lines_cleared + 0.01  # Small reward for each step survived
 if game_over:
@@ -338,6 +365,7 @@ if game_over:
 ```
 
 **Option 3: NES Score**
+
 ```python
 reward = (score_after - score_before) / 1000.0  # Normalize
 if game_over:
@@ -345,6 +373,7 @@ if game_over:
 ```
 
 **Option 4: Height Penalty** (based on GA insights)
+
 ```python
 reward = lines_cleared - 0.01 * board.absolute_height()
 if game_over:
@@ -354,13 +383,16 @@ if game_over:
 Start with Option 1 or 2 (simpler), then experiment.
 
 ### Expected Training Time
+
 - **Episodes needed**: 5,000-10,000 games
 - **Wall time** (single CPU): 12-24 hours
 - **Wall time** (GPU): 4-8 hours
 - **Performance**: Should exceed WeightedBot after 5k-7k episodes
 
 ### Evaluation Metrics
+
 Track during training:
+
 - Average episode reward
 - Average lines cleared per game
 - Average game score
@@ -368,10 +400,12 @@ Track during training:
 - Epsilon value
 
 Evaluate every 500 episodes:
+
 - Play 50 games without exploration (epsilon=0)
 - Compare to WeightedBot baseline
 
 ### Key Files to Create
+
 - `bot/neural_bot/dqn_model.py`: Network architecture
 - `bot/neural_bot/dqn_bot.py`: Bot implementation
 - `bot/neural_bot/replay_buffer.py`: Experience replay
@@ -388,6 +422,7 @@ Once DQN is working, explore these improvements:
 **Motivation**: Treat board as 2D image; CNNs excel at spatial pattern recognition
 
 **Architecture**:
+
 ```
 Input: 10×20×1 board (or 10×20×2 with current piece overlay)
     ↓
@@ -407,6 +442,7 @@ Output (68 Q-values)
 ```
 
 **Why it helps**:
+
 - Automatically learns spatial features (holes, wells, contours)
 - Parameter sharing makes training more efficient
 - Translation invariance: patterns are similar across board columns
@@ -418,6 +454,7 @@ Output (68 Q-values)
 **Motivation**: Standard DQN overestimates Q-values, hurting performance
 
 **Change to Q-learning update**:
+
 ```python
 # Standard DQN: uses target network for both action selection and evaluation
 max_next_q = target_network(next_states).max(dim=1)[0]
@@ -436,6 +473,7 @@ max_next_q = target_network(next_states).gather(1, best_actions)
 **Motivation**: Separate value of being in a state from value of actions
 
 **Architecture**:
+
 ```
 Input → Shared Layers → Split into two streams:
     ├─ Value Stream: Dense → V(s) [scalar]
@@ -445,6 +483,7 @@ Output: Q(s,a) = V(s) + (A(s,a) - mean(A(s,a)))
 ```
 
 **Why it helps**:
+
 - Value stream learns how good the board state is (independent of action)
 - Advantage stream learns which action is best
 - Faster learning: value doesn't need to relearn for each action
@@ -456,6 +495,7 @@ Output: Q(s,a) = V(s) + (A(s,a) - mean(A(s,a)))
 **Motivation**: Learn more from surprising/important transitions
 
 **Change**:
+
 ```python
 # Store with priority based on TD-error
 td_error = abs(target_q - current_q)
@@ -474,6 +514,7 @@ batch = replay_buffer.sample(BATCH_SIZE, beta=0.4)
 **Motivation**: Use rewards from multiple future steps, not just next step
 
 **Change**:
+
 ```python
 # Standard: R_t + γ * max Q(s_t+1, a)
 # 3-step: R_t + γ*R_t+1 + γ²*R_t+2 + γ³ * max Q(s_t+3, a)
@@ -488,6 +529,7 @@ batch = replay_buffer.sample(BATCH_SIZE, beta=0.4)
 **Motivation**: Model temporal dependencies and piece sequences
 
 **Architecture**:
+
 ```
 Input (board + piece)
     ↓
@@ -501,6 +543,7 @@ Output (Q-values)
 ```
 
 **Why it helps**:
+
 - Can learn patterns like "I-piece drought"
 - Models dependency between current and next piece
 - Implicitly learns to plan ahead
@@ -510,6 +553,7 @@ Output (Q-values)
 ### 3.7 Rainbow DQN
 
 **Integration**: Combine all improvements above into one model
+
 - Double DQN
 - Dueling architecture
 - Prioritized replay
@@ -524,6 +568,7 @@ Output (Q-values)
 ## Implementation Roadmap
 
 ### Weeks 1-2: Phase 1 - Supervised Learning
+
 - [ ] Implement data collection from WeightedBot
 - [ ] Create feedforward network architecture
 - [ ] Build training pipeline with PyTorch
@@ -531,11 +576,13 @@ Output (Q-values)
 - [ ] Establish performance baseline
 
 **Deliverables**:
+
 - Working neural bot that mimics GA bot
 - Training infrastructure and evaluation scripts
 - Baseline performance numbers
 
 ### Weeks 3-6: Phase 2 - DQN
+
 - [ ] Implement replay buffer
 - [ ] Build DQN architecture (feedforward version)
 - [ ] Implement target network and update logic
@@ -546,40 +593,47 @@ Output (Q-values)
 - [ ] Comprehensive evaluation vs GA baseline
 
 **Deliverables**:
+
 - Working DQN bot trained via self-play
 - Reward shaping experiments documented
 - Performance comparison with GA bot
 - Training curves and analysis
 
 ### Weeks 7-10: Phase 3a - CNN and DDQN
+
 - [ ] Implement CNN architecture
 - [ ] Train CNN-based DQN
 - [ ] Implement Double DQN
 - [ ] Compare with feedforward DQN
 
 **Deliverables**:
+
 - CNN-based DQN bot
 - Double DQN implementation
 - Performance comparison
 
 ### Weeks 11-14: Phase 3b - Advanced Techniques
+
 - [ ] Implement Dueling DQN
 - [ ] Add prioritized experience replay
 - [ ] Experiment with multi-step returns
 - [ ] Test LSTM architecture
 
 **Deliverables**:
+
 - Advanced DQN variants
 - Ablation studies showing impact of each technique
 - Best performing model identified
 
 ### Weeks 15+: Phase 3c - Rainbow and Optimization
+
 - [ ] Integrate best techniques into Rainbow DQN
 - [ ] Hyperparameter tuning
 - [ ] Extended training runs
 - [ ] Performance optimization
 
 **Deliverables**:
+
 - State-of-the-art Tetris bot
 - Comprehensive benchmarks
 - Research writeup
@@ -589,6 +643,7 @@ Output (Q-values)
 ## Integration with Existing Codebase
 
 ### Directory Structure
+
 ```
 bot/neural_bot/
 ├── __init__.py
@@ -797,16 +852,19 @@ python run.py --bot-model DQNBot --model-path bot/neural_bot/checkpoints/dqn_bes
 ### Computational Requirements
 
 **Phase 1 (Supervised)**:
+
 - Training time: 1-2 hours (CPU)
 - Memory: ~2GB
 - GPU: Optional, 10x speedup
 
 **Phase 2 (DQN)**:
+
 - Training time: 12-24 hours (CPU), 4-8 hours (GPU)
 - Memory: ~4GB (replay buffer)
 - GPU: Highly recommended for Phase 2+
 
 **Phase 3 (Advanced)**:
+
 - Training time: 24-72 hours (GPU recommended)
 - Memory: 8-16GB (larger replay buffers)
 - GPU: Essential for CNN and recurrent models
@@ -825,18 +883,22 @@ python run.py --bot-model DQNBot --model-path bot/neural_bot/checkpoints/dqn_bes
 Common issues and solutions:
 
 **Problem**: Network outputs constant values
+
 - **Cause**: Dead neurons or too-small learning rate
 - **Solution**: Check activations, increase LR, use different initialization
 
 **Problem**: Training loss decreases but evaluation performance doesn't improve
+
 - **Cause**: Overfitting to replay buffer
 - **Solution**: Increase epsilon, larger replay buffer, more diverse training
 
 **Problem**: Q-values explode
+
 - **Cause**: No gradient clipping or target network updates
 - **Solution**: Clip gradients to [-1, 1], update target network more frequently
 
 **Problem**: Agent learns suboptimal policy
+
 - **Cause**: Poor reward shaping
 - **Solution**: Experiment with different reward functions, add shaping terms
 
@@ -845,6 +907,7 @@ Common issues and solutions:
 Compare all models on consistent metrics:
 
 **Performance Metrics**:
+
 - Average lines cleared over 100 games
 - Average score over 100 games
 - Max lines cleared in any game
@@ -852,11 +915,13 @@ Compare all models on consistent metrics:
 - Variance in performance (consistency)
 
 **Comparison Baseline**:
+
 - RandomBot: ~30 lines
 - WeightedBotLines (your current best): ~??? lines (measure this first)
 - Human expert: 200-300 lines (level 19)
 
 **Success Criteria**:
+
 - Phase 1: 70-90% of WeightedBot performance
 - Phase 2: Match or exceed WeightedBot
 - Phase 3: Significantly exceed WeightedBot (1.5-2x lines cleared)
@@ -920,6 +985,7 @@ This plan provides a concrete, research-backed roadmap for building a neural net
 **Phase 3** explores cutting-edge techniques that have pushed DQN to state-of-the-art performance across many domains. Each improvement is modular and builds on the previous work.
 
 The progression from simple to complex allows you to:
+
 - Learn PyTorch and neural network debugging on easier problems
 - Validate each component before adding complexity
 - Achieve working results quickly (Phase 1) while building toward research-grade performance (Phase 3)
@@ -934,6 +1000,7 @@ The beauty of this approach: even if you never move past Phase 2, you'll have a 
 ## References and Further Reading
 
 ### Key Papers
+
 - Mnih et al. (2015): "Human-level control through deep reinforcement learning" - Original DQN paper
 - Van Hasselt et al. (2016): "Deep Reinforcement Learning with Double Q-learning" - Double DQN
 - Wang et al. (2016): "Dueling Network Architectures for Deep Reinforcement Learning" - Dueling DQN
@@ -941,18 +1008,21 @@ The beauty of this approach: even if you never move past Phase 2, you'll have a 
 - Hessel et al. (2018): "Rainbow: Combining Improvements in Deep Reinforcement Learning" - Rainbow DQN
 
 ### Tetris-Specific Resources
+
 - [Stanford CS231n: Playing Tetris with Deep RL](https://cs231n.stanford.edu/reports/2016/pdfs/121_Report.pdf)
 - [How I trained a Neural Network to Play Tetris](https://timhanewich.medium.com/how-i-trained-a-neural-network-to-play-tetris-using-reinforcement-learning-ecfa529c767a)
 - [The Making of a Deep Learning Tetris AI](https://medium.com/wenqins-blog/the-making-of-a-deep-learning-tetris-ai-d5663f21d847)
 
 ### Code Repositories
+
 - [vietnh1009/Tetris-deep-Q-learning-pytorch](https://github.com/vietnh1009/Tetris-deep-Q-learning-pytorch)
 - [nuno-faria/tetris-ai](https://github.com/nuno-faria/tetris-ai)
 - [jaybutera/tetrisRL](https://github.com/jaybutera/tetrisRL)
 
 ### PyTorch Resources
-- PyTorch DQN Tutorial: https://pytorch.org/tutorials/intermediate/reinforcement_q_learning.html
-- PyTorch Documentation: https://pytorch.org/docs/stable/index.html
+
+- PyTorch DQN Tutorial: <https://pytorch.org/tutorials/intermediate/reinforcement_q_learning.html>
+- PyTorch Documentation: <https://pytorch.org/docs/stable/index.html>
 
 ---
 

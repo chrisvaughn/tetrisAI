@@ -9,6 +9,7 @@ This is a Tetris AI project implementing bot strategies using Genetic Algorithms
 ## Environment Setup
 
 ### Python Environment
+
 ```bash
 # Setup with pyenv
 export py_version=3.12
@@ -19,6 +20,7 @@ pyenv local tetrisAI
 ```
 
 ### Dependencies
+
 ```bash
 # For macOS with emulator support
 poetry install -E macOS
@@ -32,22 +34,26 @@ poetry install
 ### Running Bots
 
 **In-memory simulation (fast, for training/testing):**
+
 ```bash
 python run.py --bot-model WeightedBotLines
 python run.py --bot-model Random --seed 12345 --stats
 ```
 
 **With emulator (plays actual NES Tetris):**
+
 ```bash
 python run.py --emulator --bot-model WeightedBotLines --stats
 ```
 
 **Using saved weights from training:**
+
 ```bash
 python run.py --bot-model WeightedBotScore --save-file save_score.pkl --save-gen 50
 ```
 
 **Common flags:**
+
 - `--stats`: Print move statistics during gameplay
 - `--drop`: Enable soft drop (pieces fall faster)
 - `--seed <int>`: Set RNG seed for reproducibility
@@ -57,6 +63,7 @@ python run.py --bot-model WeightedBotScore --save-file save_score.pkl --save-gen
 ### Training Bots
 
 **Genetic Algorithm training (WeightedBot):**
+
 ```bash
 # Train for lines optimization
 python train.py --fitness lines --population 100 --generations 100
@@ -100,6 +107,7 @@ isort . && black .
 ### Core Game Engine (`tetris/`)
 
 **Game Loop Flow:**
+
 1. Game spawns new piece
 2. Bot receives state update via `bot.update_state(game.state)`
 3. Bot evaluates possible moves and returns best move
@@ -108,6 +116,7 @@ isort . && black .
 6. Repeat until game over
 
 **Key Classes:**
+
 - **Game** (`game.py`): Main game controller with threading for continuous play
 - **GameState** (`state.py`): Represents game state at any moment; cloneable for move simulation
 - **Board** (`board.py`): 10x20 grid with line clearing and collision detection
@@ -118,11 +127,13 @@ isort . && black .
 ### Bot System (`bot/`)
 
 All bots inherit from `BaseBot` and implement:
+
 - `update_state(state)`: Receive current game state
 - `get_best_move(debug)`: Return `BotMove` with rotations and translations
 - `evaluate_move(rotations, translation)`: Score individual moves
 
 **BotMove Structure:**
+
 - `rotations` (0-3): Number of clockwise rotations
 - `translation` (int): Horizontal movement (negative=left, positive=right)
 - `score`: Evaluation score
@@ -145,6 +156,7 @@ All bots inherit from `BaseBot` and implement:
 ### Training System
 
 **Genetic Algorithm** (`train.py`):
+
 - Evolves weights for WeightedBot evaluation functions
 - Fitness methods: "lines" (maximize lines cleared) or "score" (maximize points)
 - Process: Initialize population → Evaluate → Select → Crossover/Mutate → Repeat
@@ -155,6 +167,7 @@ All bots inherit from `BaseBot` and implement:
 ### Vision System (`vision/`)
 
 **Detectorist** (`detect.py`):
+
 - Computer vision for real emulator integration
 - Detects board state, current piece, and next piece from screen captures
 - Works with 256x240 NES resolution
@@ -165,6 +178,7 @@ All bots inherit from `BaseBot` and implement:
 ### Move Execution Pattern
 
 The standard pattern for executing bot moves:
+
 ```python
 if game.state.new_piece():
     bot.update_state(game.state)
@@ -182,6 +196,7 @@ while move_sequence:
 ### State Cloning for Move Simulation
 
 WeightedBot simulates moves by cloning state:
+
 ```python
 test_state = current_state.clone()
 execute_move(test_state, rotations, translation)
@@ -193,6 +208,7 @@ This allows evaluating all possible moves without affecting game state.
 ### Parallel Evaluation
 
 WeightedBot uses multiprocessing pool for evaluating moves:
+
 - Pool initialized via `get_pool()` in `evaluation_pool.py`
 - Distributes move evaluation across CPU cores
 - Significant speedup for training and gameplay
@@ -200,6 +216,7 @@ WeightedBot uses multiprocessing pool for evaluating moves:
 ### Emulator Integration
 
 With `--emulator` flag, the system:
+
 1. Captures screen from NES emulator
 2. Uses vision system to detect board and pieces
 3. Sends keyboard commands to emulator
@@ -208,6 +225,7 @@ With `--emulator` flag, the system:
 ### Scoring Versions
 
 Two scoring systems available via `--scoring` flag:
+
 - `v1`: Original scoring
 - `v2`: Updated scoring system (default)
 
@@ -226,6 +244,7 @@ Used consistently across training and evaluation for fair comparison.
 ### Modifying Evaluation Functions
 
 For WeightedBot, edit `bot/weighted_bot/evaluate.py`:
+
 - Add new heuristic function
 - Add corresponding weight to `Weights` dataclass
 - Update `scoring_func()` to incorporate new heuristic
@@ -234,6 +253,7 @@ For WeightedBot, edit `bot/weighted_bot/evaluate.py`:
 ### Training for Specific Metrics
 
 The `--fitness` flag determines optimization target:
+
 - `--fitness lines`: Maximize lines cleared (survival)
 - `--fitness score`: Maximize game score (includes level multiplier)
 
@@ -242,11 +262,13 @@ Both use `top_3rd_avg_of()` which runs multiple games and averages top 33% resul
 ### Debugging Bot Decisions
 
 Enable detailed logging with `--debug` and `--stats`:
+
 ```bash
 python run.py --bot-model WeightedBotLines --stats --debug
 ```
 
 This shows:
+
 - Move selection time
 - Number of moves considered
 - Best move parameters

@@ -30,6 +30,7 @@ python train_with_recording.py \
 ```
 
 **Parameters:**
+
 - `--recording-dir`: Where to save recordings (default: `./recordings`)
 - `--snapshot-interval`: Record every N pieces (1=every piece, 5=every 5th piece)
 - `--resume`: Resume from existing save file
@@ -54,6 +55,7 @@ python visualization/replay_viewer.py ./recordings \
 ```
 
 **Controls during playback:**
+
 - `SPACE` - Play/Pause
 - `LEFT/RIGHT` - Step backward/forward
 - `+/-` - Increase/decrease speed
@@ -75,6 +77,7 @@ python validation/metrics.py ./recordings --max-gen 50 --export-csv metrics.csv
 ### Recording System
 
 **Files:**
+
 - `tetris/recorder.py` - Core recording infrastructure
 - `train_with_recording.py` - Enhanced training script
 
@@ -117,6 +120,7 @@ class TrainingRecorder:
 ```
 
 **Storage Format:**
+
 - Gzip-compressed pickle files
 - Board states use run-length encoding
 - One file per game: `gen_XXXX_genome_YYYY.pkl.gz`
@@ -125,6 +129,7 @@ class TrainingRecorder:
 ### Visualization System
 
 **Files:**
+
 - `visualization/replay_viewer.py` - Multi-game replay viewer
 
 **Key Classes:**
@@ -147,6 +152,7 @@ def view_generation_evolution(recording_dir, max_generations, sample_every)
 ### Validation System
 
 **Files:**
+
 - `validation/metrics.py` - Training analysis metrics
 
 **Key Classes:**
@@ -270,11 +276,13 @@ cv2.imwrite('snapshot.png', img)
 ### Disk Space
 
 Recording every piece with full state:
+
 - ~50-200 KB per game
 - Population of 100: ~5-20 MB per generation
 - 100 generations: ~0.5-2 GB total
 
 To reduce storage:
+
 1. Increase `--snapshot-interval` (record every 5-10 pieces)
 2. Record only best genomes (modify `train_with_recording.py`)
 3. Compress older generations more aggressively
@@ -306,27 +314,32 @@ The recording system is designed to be **optional and non-invasive**:
 ## Metrics Explained
 
 ### Fitness Metrics
+
 - **best_fitness**: Highest fitness in generation
 - **avg_fitness**: Average fitness across population
 - **worst_fitness**: Lowest fitness in generation
 
 ### Game Performance
+
 - **best_lines**: Most lines cleared by any genome
 - **avg_lines**: Average lines cleared
 - **best_score**: Highest score achieved
 - **avg_score**: Average score
 
 ### Board Quality
+
 - **avg_holes**: Average holes in board (lower is better)
 - **avg_height**: Average cumulative height (varies by strategy)
 - **avg_bumpiness**: Average surface roughness (lower is usually better)
 
 ### Strategy Metrics
+
 - **tetris_rate**: % of line clears that are 4-liners (higher is more efficient)
 - **move_diversity**: Entropy of move choices (higher = more varied strategy)
 - **avg_evaluation_time_ms**: Time to evaluate moves (for performance tuning)
 
 ### Training Progress
+
 - **convergence**: When fitness stabilizes (based on coefficient of variation)
 - **improvement_rate**: % fitness improvement per generation
 - **plateaus**: Periods of little fitness improvement
