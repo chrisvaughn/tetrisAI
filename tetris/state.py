@@ -16,6 +16,8 @@ class InvalidMove(Exception):
 
 
 def nes_prng(value: int):
+    # 16-bit right-shift LFSR, feedback taps at bits 1 and 9.
+    # To seed from NES RAM: value = ($0017 << 8) | $0018  (NOT $0018 << 8 | $0017).
     bit1 = (value >> 1) & 1
     bit9 = (value >> 9) & 1
     lmb = bit1 ^ bit9

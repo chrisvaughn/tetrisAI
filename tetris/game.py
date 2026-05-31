@@ -88,7 +88,7 @@ class Game:
                     if lines > 0:
                         self.lines += lines
                         if lines <= len(score_by_number_of_lines_cleared):
-                            self.score += score_by_number_of_lines_cleared[lines - 1] * self.level + 1
+                            self.score += score_by_number_of_lines_cleared[lines - 1] * (self.level + 1)
                         self.line_combos[lines] += 1
                     cp = self.state.select_next_piece()
                     self.piece_stats[cp.name] += 1
