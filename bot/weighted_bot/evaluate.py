@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from itertools import zip_longest
 from typing import List, Tuple, Union
 
-from tetris import GameState, InvalidMove
+from tetris import MS_PER_FRAME, MS_PER_KEYPRESS, GameState, InvalidMove
 
 from .evaluation_pool import get_pool
 
@@ -56,18 +56,31 @@ class Move:
 
 
 def execute_move(state: GameState, rot: int, trans: int):
-    state.rot_cw(rot)
-    if trans < 0:
-        state.move_left(abs(trans))
-    if trans > 0:
-        state.move_right(trans)
-    # move down as much as possible in one go
+    # Simulate piece falling while the player executes the move sequence.
+    # rot=3 maps to 1 CCW keypress in practice (see BotMove.to_sequence).
+    if state.frames_per_cell > 0:
+        effective_rotations = 1 if rot == 3 else rot
+        keypresses = effective_rotations + abs(trans)
+        ms_per_row = state.frames_per_cell * MS_PER_FRAME
+        rows_to_drop = int(keypresses * MS_PER_KEYPRESS / ms_per_row)
+        for _ in range(rows_to_drop):
+            if not state.move_down_possible():
+                break
+            state.current_piece.move_down()
+
+    if rot > 0 and not state.rot_cw(rot):
+        raise InvalidMove(state.current_piece)
+    if trans < 0 and not state.move_left(abs(trans)):
+        raise InvalidMove(state.current_piece)
+    if trans > 0 and not state.move_right(trans):
+        raise InvalidMove(state.current_piece)
+
+    # drop to the bottom
     _, y = state.current_piece.zero_based_corner_xy
     y = y + state.current_piece.shape.shape[0]
     moves = state.board.rows - y - state.absolute_height() - 1
     if moves > 0:
         state.move_down(moves)
-    # move one space at a time to check for collisions
     while state.move_down_possible():
         state.move_down()
     state.move_down()
@@ -136,6 +149,9 @@ class Evaluator:
         score = 0
         for k in values.keys():
             score += getattr(self._weights, k) * values[k]
+        unreachable = state.unreachable_cells()
+        if unreachable > 0:
+            score -= 1000 * unreachable
         return score, {"values": values, "weights": self._weights}
 
     def scoring_v2(self, state: GameState) -> Tuple[float, dict]:
@@ -157,6 +173,9 @@ class Evaluator:
         score = 0
         for k in values.keys():
             score += getattr(self._weights, k) * values[k]
+        unreachable = state.unreachable_cells()
+        if unreachable > 0:
+            score -= 1000 * unreachable
         return score, {"values": values, "weights": self._weights}
 
     def evaluate_all_moves(self) -> List[Move]:

@@ -10,7 +10,7 @@ from typing import Union
 import cv2
 
 from bot import RandomBot, WeightedBot, by_mode, get_pool, shutdown_pool
-from tetris import Game, GameState, Tetrominoes
+from tetris import Game, GameState, Tetrominoes, frames_per_cell_by_level
 from vision import Detectorist
 
 
@@ -124,6 +124,7 @@ def _run_with_emulator(args, bot, emulator):
     piece_stats = Counter()
 
     gs = GameState(args.seed)
+    gs.frames_per_cell = frames_per_cell_by_level.get(args.level, 2)
     detector = Detectorist()
 
     expected_state: Union[GameState, None] = None

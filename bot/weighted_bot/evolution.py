@@ -1,3 +1,4 @@
+import multiprocessing
 import os
 import pickle
 import random
@@ -7,6 +8,7 @@ from typing import Callable, List
 from progressbar import ETA, Bar, Percentage, ProgressBar
 
 from .evaluate import Weights
+from .evaluation_pool import _evaluate_genome, _genome_worker_init
 
 
 @dataclass
@@ -32,13 +34,16 @@ class GA:
         fitness: Callable,
         save_file: str,
         command_args: dict = None,
+        genome_workers: int = 1,
     ):
         self.population_size = population_size
         self.generations = generations
         self.fitness = fitness
         self.save_file = save_file
         self.command_args = command_args
+        self.genome_workers = genome_workers
         self.best_per_generation = []
+        self._pool = None
 
         self.select_best_n = 15
         self.mutation_rate = 0.05
@@ -66,15 +71,23 @@ class GA:
         pbar = None
         if progress:
             pbar = ProgressBar(widgets=[Percentage(), Bar(), ETA()], maxval=len(genomes)).start()
-        best_performers = []
-        for i, genome in enumerate(genomes):
-            genome.fitness = self.fitness(genome.weights)
-            best_performers.append(genome)
-            if pbar:
-                pbar.update(i + 1)
+
+        if self._pool is not None:
+            for i, (genome, fitness) in enumerate(
+                zip(genomes, self._pool.imap(_evaluate_genome, [g.weights for g in genomes]))
+            ):
+                genome.fitness = fitness
+                if pbar:
+                    pbar.update(i + 1)
+        else:
+            for i, genome in enumerate(genomes):
+                genome.fitness = self.fitness(genome.weights)
+                if pbar:
+                    pbar.update(i + 1)
+
         if pbar:
             pbar.finish()
-        best_performers = sorted(best_performers, key=lambda x: x.fitness, reverse=True)
+        best_performers = sorted(genomes, key=lambda x: x.fitness, reverse=True)
         return best_performers[: self.select_best_n]
 
     def combine_and_mutate(self, parents: List[Genome]):
@@ -94,6 +107,7 @@ class GA:
 
     def run(self, resume: bool = False):
         if resume and os.path.isfile(self.save_file):
+            # Save files are written by this same process — trusted local data only.
             with open(self.save_file, "rb") as f:
                 save = pickle.load(f)
             genomes = save.genomes
@@ -105,13 +119,32 @@ class GA:
         else:
             genomes = self.create_initial()
             current = 0
-        for gen in range(current, self.generations):
-            print(f"Generation: {gen}")
-            best = self.select_best(genomes)
-            genomes = self.combine_and_mutate(best)
-            print(best[0])
-            self.best_per_generation.append(best[0])
-            with open(self.save_file, "wb") as f:
-                pickle.dump(SaveState(self.best_per_generation, genomes, gen + 1, self.command_args), f)
+
+        if self.genome_workers > 1:
+            try:
+                multiprocessing.set_start_method("spawn")
+            except RuntimeError:
+                pass
+            print(f"Initializing genome pool with {self.genome_workers} workers")
+            self._pool = multiprocessing.Pool(
+                self.genome_workers,
+                initializer=_genome_worker_init,
+                initargs=(self.fitness,),
+            )
+
+        try:
+            for gen in range(current, self.generations):
+                print(f"Generation: {gen}")
+                best = self.select_best(genomes)
+                genomes = self.combine_and_mutate(best)
+                print(best[0])
+                self.best_per_generation.append(best[0])
+                with open(self.save_file, "wb") as f:
+                    pickle.dump(SaveState(self.best_per_generation, genomes, gen + 1, self.command_args), f)
+        finally:
+            if self._pool is not None:
+                self._pool.terminate()
+                self._pool.join()
+                self._pool = None
 
         return self.select_best(genomes)[0]

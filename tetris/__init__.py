@@ -1,4 +1,7 @@
 from .board import Board as Board
+from .constants import MS_PER_FRAME as MS_PER_FRAME
+from .constants import MS_PER_KEYPRESS as MS_PER_KEYPRESS
+from .constants import frames_per_cell_by_level as frames_per_cell_by_level
 from .game import Game as Game
 from .pieces import Piece as Piece
 from .pieces import Tetrominoes as Tetrominoes

@@ -3,42 +3,9 @@ import time
 from collections import Counter
 
 from .board import Board
+from .constants import frames_per_cell_by_level
 from .pieces import Piece
 from .state import GameState
-
-# frames per cell in original NES Tetris
-frames_per_cell_by_level = {
-    0: 48,
-    1: 43,
-    2: 38,
-    3: 33,
-    4: 28,
-    5: 23,
-    6: 18,
-    7: 13,
-    8: 8,
-    9: 6,
-    10: 5,
-    11: 5,
-    12: 5,
-    13: 4,
-    14: 4,
-    15: 4,
-    16: 3,
-    17: 3,
-    18: 3,
-    19: 2,
-    20: 2,
-    21: 2,
-    22: 2,
-    23: 2,
-    24: 2,
-    25: 2,
-    26: 2,
-    27: 2,
-    28: 2,
-    29: 1,
-}
 
 score_by_number_of_lines_cleared = [40, 100, 300, 1200]
 
@@ -48,6 +15,7 @@ class Game:
         self.state = GameState(seed, piece_list)
         self.state_lock = threading.Lock()
         self.frames_per_cell = frames_per_cell_by_level[level]
+        self.state.frames_per_cell = self.frames_per_cell
         self.framerate = 1 / 60
         self.game_over = False
         self.lines = 0

@@ -34,6 +34,7 @@ class GameState:
         self._last_rn: int = seed
         self._first_piece: bool = True
         self.piece_list = piece_list
+        self.frames_per_cell: int = 0  # 0 = no fall simulation; set by Game or caller
 
     def select_next_piece(self) -> Piece:
         if self.piece_list:
@@ -112,6 +113,7 @@ class GameState:
         new_state._last_rn = self._last_rn
         new_state._first_piece = self._first_piece
         new_state.piece_list = self.piece_list  # not mutated during move evaluation
+        new_state.frames_per_cell = self.frames_per_cell
         return new_state
 
     def new_piece(self) -> bool:
@@ -257,3 +259,6 @@ class GameState:
 
     def count_cells(self) -> (int, int):
         return self.board.count_cells()
+
+    def unreachable_cells(self) -> int:
+        return self.board.count_unreachable_cells()

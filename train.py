@@ -2,10 +2,8 @@
 import argparse
 from random import randint
 
-from bot import GA, RandomBot, WeightedBot, Weights, get_pool
+from bot import GA, RandomBot, WeightedBot, Weights
 from tetris import Game, Piece, Tetrominoes
-
-run_evaluator_in_parallel = True
 
 
 def nes_prng(value: int):
@@ -26,18 +24,34 @@ def generate_piece_lists(num_pieces: int, seed: int = 0) -> list[Piece]:
     return pieces
 
 
+class GenomeFitness:
+    """Picklable fitness callable for genome-level parallel evaluation."""
+
+    def __init__(self, piece_lists, result_key, scoring, bot_model):
+        self.piece_lists = piece_lists
+        self.result_key = result_key
+        self.scoring = scoring
+        self.bot_model = bot_model
+
+    def __call__(self, weights):
+        bot = create_bot(self.bot_model, weights=weights, parallel=False, scoring=self.scoring)
+        results = []
+        for piece_list in self.piece_lists:
+            result = evaluate_with_bot(bot, piece_list)
+            results.append(result[self.result_key])
+        results = sorted(results)
+        results = results[int(len(results) * 0.33) :]
+        return sum(results) / len(results)
+
+
 def main(args):
-    global run_evaluator_in_parallel
-    if args.no_parallel:
-        run_evaluator_in_parallel = False
-    if run_evaluator_in_parallel:
-        get_pool(args.num_of_parallel)
+    genome_workers = 1 if args.no_parallel else args.num_of_parallel
 
     print(f"Training {args.bot_model} model...")
     print(f"Fitness method: {args.fitness_method}")
     print(f"Scoring: {args.scoring}")
     print(f"Population: {args.population}, Generations: {args.generations}")
-    print(f"Parallel: {run_evaluator_in_parallel}")
+    print(f"Genome workers: {genome_workers}")
     print("-" * 50)
 
     piece_lists = []
@@ -58,6 +72,7 @@ def main(args):
         fitness_methods[args.fitness_method],
         filename,
         command_args=vars(args),
+        genome_workers=genome_workers,
     )
     best = ga.run(resume=True)
     print("All Done")
@@ -65,7 +80,6 @@ def main(args):
 
 
 def create_bot(bot_model: str, weights: Weights = None, parallel: bool = True, scoring: str = "v2"):
-    """Create a bot instance based on the bot model"""
     if bot_model == "WeightedBot":
         if weights is None:
             weights = Weights()
@@ -77,26 +91,10 @@ def create_bot(bot_model: str, weights: Weights = None, parallel: bool = True, s
 
 
 def top_3rd_avg_of(piece_lists, result_key, scoring, bot_model):
-    # Create a single bot instance to reuse
-    bot = create_bot(bot_model, parallel=run_evaluator_in_parallel, scoring=scoring)
-
-    def avg_of_inner(weights):
-        # Update the bot's weights instead of creating a new instance
-        if hasattr(bot, "update_weights"):
-            bot.update_weights(weights)
-        results = []
-        for piece_list in piece_lists:
-            result = evaluate_with_bot(bot, piece_list)
-            results.append(result[result_key])
-        results = sorted(results)
-        results = results[int(len(results) * 0.33) :]
-        return sum(results) / len(results)
-
-    return avg_of_inner
+    return GenomeFitness(piece_lists, result_key, scoring, bot_model)
 
 
 def evaluate_with_bot(bot: WeightedBot, piece_list: list[Piece]):
-    """Evaluate a piece list using an existing bot instance"""
     game = Game(level=19, piece_list=piece_list)
     drop_enabled = False
     move_count = 0
@@ -163,7 +161,7 @@ if __name__ == "__main__":
         default=100,
         help="number of iterations to average top 3rd",
     )
-    parser.add_argument("--parallel-runners", dest="num_of_parallel", type=int, default=4)
+    parser.add_argument("--parallel-runners", dest="num_of_parallel", type=int, default=8)
     parser.add_argument("--scoring", choices=["v1", "v2"], default="v2")
     parser.add_argument(
         "--bot-model", choices=["WeightedBot", "RandomBot"], default="WeightedBot", help="bot model to train"
