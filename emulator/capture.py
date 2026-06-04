@@ -1,3 +1,4 @@
+import signal
 import time
 from multiprocessing import Process, Queue, shared_memory
 
@@ -22,6 +23,7 @@ def capture_latest_image_into_shared_memory(
     queue,
     display_fps=False,
 ):
+    signal.signal(signal.SIGINT, signal.SIG_IGN)
     capturer = Capture(emulator_name, fps)
     capture_counter = 0
     start_time = time.time()

@@ -57,6 +57,7 @@ def main(args):
         args.generations,
         fitness_methods[args.fitness_method],
         filename,
+        command_args=vars(args),
     )
     best = ga.run(resume=True)
     print("All Done")

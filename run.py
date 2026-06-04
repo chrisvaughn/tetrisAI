@@ -9,7 +9,7 @@ from typing import Union
 
 import cv2
 
-from bot import RandomBot, WeightedBot, by_mode, get_pool
+from bot import RandomBot, WeightedBot, by_mode, get_pool, shutdown_pool
 from tetris import Game, GameState, Tetrominoes
 from vision import Detectorist
 
@@ -109,6 +109,13 @@ def run_with_emulator(args, bot):
     from emulator import Emulator
 
     emulator = Emulator(args.limit_speed, args.music, args.level, args.sound)
+    try:
+        _run_with_emulator(args, bot, emulator)
+    finally:
+        emulator.destroy()
+
+
+def _run_with_emulator(args, bot, emulator):
     soft_drop = args.drop
     move_sequence = []
     move_count = 0
@@ -193,7 +200,6 @@ def run_with_emulator(args, bot):
 
     print("Game Over")
     print_final_stats(lines_completed, piece_stats, line_combos)
-    emulator.destroy()
 
 
 if __name__ == "__main__":
@@ -246,4 +252,9 @@ if __name__ == "__main__":
     parser.add_argument("--scoring", choices=["v1", "v2"], default="v2")
 
     args = parser.parse_args()
-    main(args)
+    try:
+        main(args)
+    except KeyboardInterrupt:
+        print("\nInterrupted")
+    finally:
+        shutdown_pool()

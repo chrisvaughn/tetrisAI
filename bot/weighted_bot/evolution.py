@@ -21,6 +21,7 @@ class SaveState:
     best_for_each_generation: List[Genome]
     genomes: List[Genome]
     current_generation: int
+    command_args: dict = None
 
 
 class GA:
@@ -30,11 +31,13 @@ class GA:
         generations: int,
         fitness: Callable,
         save_file: str,
+        command_args: dict = None,
     ):
         self.population_size = population_size
         self.generations = generations
         self.fitness = fitness
         self.save_file = save_file
+        self.command_args = command_args
         self.best_per_generation = []
 
         self.select_best_n = 15
@@ -96,6 +99,9 @@ class GA:
             genomes = save.genomes
             current = save.current_generation
             self.best_per_generation = save.best_for_each_generation
+            saved_args = getattr(save, "command_args", None)
+            if saved_args:
+                print(f"Originally trained with args: {saved_args}")
         else:
             genomes = self.create_initial()
             current = 0
@@ -106,6 +112,6 @@ class GA:
             print(best[0])
             self.best_per_generation.append(best[0])
             with open(self.save_file, "wb") as f:
-                pickle.dump(SaveState(self.best_per_generation, genomes, gen + 1), f)
+                pickle.dump(SaveState(self.best_per_generation, genomes, gen + 1, self.command_args), f)
 
         return self.select_best(genomes)[0]
