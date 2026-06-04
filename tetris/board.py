@@ -116,3 +116,26 @@ class Board:
         cells = int(cell_mask.sum())
         weighted_cells = int((rows * cell_mask).sum())
         return cells, weighted_cells
+
+    def count_unreachable_cells(self) -> int:
+        """Count empty cells sealed off from the top by filled cells."""
+        board = self.board
+        rows, cols = board.shape
+        visited = np.zeros((rows, cols), dtype=bool)
+        stack = []
+
+        for c in range(cols):
+            if board[0, c] == 0:
+                visited[0, c] = True
+                stack.append((0, c))
+
+        while stack:
+            r, c = stack.pop()
+            for dr, dc in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+                nr, nc = r + dr, c + dc
+                if 0 <= nr < rows and 0 <= nc < cols and not visited[nr, nc] and board[nr, nc] == 0:
+                    visited[nr, nc] = True
+                    stack.append((nr, nc))
+
+        empty = board == 0
+        return int((empty & ~visited).sum())

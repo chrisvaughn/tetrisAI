@@ -11,12 +11,8 @@ This is a Tetris AI project implementing bot strategies using Genetic Algorithms
 ### Python Environment
 
 ```bash
-# Setup with pyenv
-export py_version=3.14
-pyenv install $py_version --skip-existing
-pyenv uninstall -f tetrisAI
-pyenv virtualenv $py_version tetrisAI
-pyenv local tetrisAI
+# Setup with uv
+uv venv 3.14
 ```
 
 ### Dependencies
@@ -36,20 +32,20 @@ uv sync
 **In-memory simulation (fast, for training/testing):**
 
 ```bash
-python run.py --bot-model WeightedBotLines
-python run.py --bot-model Random --seed 12345 --stats
+uv run python run.py --bot-model WeightedBotLines
+uv run python run.py --bot-model Random --seed 12345 --stats
 ```
 
 **With emulator (plays actual NES Tetris):**
 
 ```bash
-python run.py --emulator --bot-model WeightedBotLines --stats
+uv run python run.py --emulator --bot-model WeightedBotLines --stats
 ```
 
 **Using saved weights from training:**
 
 ```bash
-python run.py --bot-model WeightedBotScore --save-file save_score.pkl --save-gen 50
+uv run python run.py --bot-model WeightedBotScore --save-file save_score.pkl --save-gen 50
 ```
 
 **Common flags:**
@@ -66,40 +62,40 @@ python run.py --bot-model WeightedBotScore --save-file save_score.pkl --save-gen
 
 ```bash
 # Train for lines optimization
-python train.py --fitness lines --population 100 --generations 100
+uv run python train.py --fitness lines --population 100 --generations 100
 
 # Train for score optimization
-python train.py --fitness score --population 100 --generations 50 --save-file custom_save.pkl
+uv run python train.py --fitness score --population 100 --generations 50 --save-file custom_save.pkl
 
 # Control parallelism
-python train.py --parallel-runners 8
-python train.py --no-parallel  # Disable parallel evaluation
+uv run python train.py --parallel-runners 8
+uv run python train.py --no-parallel  # Disable parallel evaluation
 ```
 
 ### Testing
 
 ```bash
 # Run all tests
-pytest
+uv run pytest
 
 # Run specific test file
-pytest tests/tetris/test_board.py
+uv run pytest tests/tetris/test_board.py
 
 # Run with coverage
-pytest --cov=tetris --cov=bot
+uv run pytest --cov=tetris --cov=bot
 ```
 
 ### Code Formatting
 
 ```bash
 # Format code and sort imports
-ruff format .
+uv run ruff format .
 
 # Lint and auto-fix
-ruff check --fix .
+uv run ruff check --fix .
 
 # Run both (common workflow)
-ruff check --fix . && ruff format .
+uv run ruff check --fix . && ruff format .
 ```
 
 ## Architecture
@@ -137,6 +133,7 @@ All bots inherit from `BaseBot` and implement:
 - `rotations` (0-3): Number of clockwise rotations
 - `translation` (int): Horizontal movement (negative=left, positive=right)
 - `score`: Evaluation score
+
 - `end_state`: Expected game state after move
 - `lines_completed`: Lines cleared by this move
 - `to_sequence()`: Converts to list of action tuples
