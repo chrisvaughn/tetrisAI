@@ -151,7 +151,7 @@ class GA:
             self.restart_generations = getattr(save, "restart_generations", None) or []
         else:
             genomes = self.create_initial()
-            current = 0
+            current = 1
 
         if self.genome_workers > 1:
             try:
@@ -166,7 +166,7 @@ class GA:
             )
 
         try:
-            for gen in range(current, self.generations):
+            for gen in range(current, self.generations + 1):
                 print(f"Generation: {gen}")
                 best = self.select_best(genomes)
                 fitnesses = [g.fitness for g in genomes]
