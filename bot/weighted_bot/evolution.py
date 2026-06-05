@@ -152,6 +152,9 @@ class GA:
         else:
             genomes = self.create_initial()
             current = 1
+            # Write initial snapshot before evaluation so visualizer has something to show.
+            with open(self.save_file, "wb") as f:
+                pickle.dump(SaveState(self.best_per_generation, genomes, current, self.command_args, self.piece_lists, self.generation_stats, self.restart_generations), f)
 
         if self.genome_workers > 1:
             try:
