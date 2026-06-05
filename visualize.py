@@ -22,11 +22,10 @@ import numpy as np
 from bot import WeightedBot
 from tetris import Game
 
-CELL = 8
-BOARD_W = 10 * CELL   # 80px
-BOARD_H = 20 * CELL   # 160px
 HEADER_H = 22
 GAP = 5
+STATUS_H = 30
+MENUBAR_H = 25
 MAX_LINES = 230
 
 COLOR_FILLED = (80, 200, 80)
@@ -35,8 +34,31 @@ COLOR_BORDER = (60, 60, 60)
 COLOR_TEXT = (180, 180, 180)
 COLOR_STATUS = (200, 200, 100)
 
-# Stagger bot startup so they don't all evaluate their first move simultaneously.
-BOT_STAGGER_S = 0.2
+BOT_STAGGER_S = 0.2  # stagger startup so bots don't all evaluate their first move at once
+
+
+def screen_size():
+    try:
+        import Quartz
+        b = Quartz.CGDisplayBounds(Quartz.CGMainDisplayID())
+        return int(b.size.width), int(b.size.height)
+    except Exception:
+        return 1920, 1080
+
+
+def best_layout(count):
+    """Find the (cols, rows, cell_px) that maximises cell size on the current screen."""
+    sw, sh = screen_size()
+    usable_h = sh - MENUBAR_H - STATUS_H
+    best_cell, best_cols = 0, 1
+    for cols in range(1, count + 1):
+        rows = math.ceil(count / cols)
+        cell_h = (usable_h - rows * (HEADER_H + GAP)) // (rows * 20)
+        cell_w = (sw - cols * GAP) // (cols * 10)
+        cell = min(cell_h, cell_w)
+        if cell > best_cell:
+            best_cell, best_cols = cell, cols
+    return best_cols, math.ceil(count / best_cols), best_cell
 
 
 def load_top_genomes(save_file, count):
@@ -124,33 +146,35 @@ class BotGame:
             self._games_played += 1
 
 
-def render_slot(board, score, lines, rank, fitness, games):
-    h = HEADER_H + BOARD_H
-    img = np.zeros((h, BOARD_W, 3), dtype=np.uint8)
-    cv2.putText(img, f"#{rank}  fit:{fitness:.0f}", (2, 9), cv2.FONT_HERSHEY_PLAIN, 0.75, COLOR_TEXT, 1)
-    cv2.putText(img, f"s:{score} l:{lines} g:{games}", (2, 19), cv2.FONT_HERSHEY_PLAIN, 0.75, COLOR_TEXT, 1)
+def render_slot(board, score, lines, rank, fitness, games, cell):
+    bw, bh = 10 * cell, 20 * cell
+    h = HEADER_H + bh
+    img = np.zeros((h, bw, 3), dtype=np.uint8)
+    scale = max(0.75, cell / 10)
+    cv2.putText(img, f"#{rank}  fit:{fitness:.0f}", (2, 12), cv2.FONT_HERSHEY_PLAIN, scale, COLOR_TEXT, 1)
+    cv2.putText(img, f"s:{score} l:{lines} g:{games}", (2, 21), cv2.FONT_HERSHEY_PLAIN, scale * 0.85, COLOR_TEXT, 1)
     for r in range(20):
         for c in range(10):
-            x0, y0 = c * CELL, HEADER_H + r * CELL
+            x0, y0 = c * cell, HEADER_H + r * cell
             color = COLOR_FILLED if board[r, c] else COLOR_EMPTY
-            cv2.rectangle(img, (x0 + 1, y0 + 1), (x0 + CELL - 1, y0 + CELL - 1), color, -1)
-    cv2.rectangle(img, (0, HEADER_H), (BOARD_W - 1, h - 1), COLOR_BORDER, 1)
+            cv2.rectangle(img, (x0 + 1, y0 + 1), (x0 + cell - 1, y0 + cell - 1), color, -1)
+    cv2.rectangle(img, (0, HEADER_H), (bw - 1, h - 1), COLOR_BORDER, 1)
     return img
 
 
-def make_canvas(bots, cols, generation_stats):
+def make_canvas(bots, cols, cell, generation_stats):
+    bw, bh = 10 * cell, 20 * cell
     rows = math.ceil(len(bots) / cols)
-    slot_w = BOARD_W + GAP
-    slot_h = HEADER_H + BOARD_H + GAP
-    status_h = 30
-    canvas = np.zeros((rows * slot_h + status_h, cols * slot_w, 3), dtype=np.uint8)
+    slot_w = bw + GAP
+    slot_h = HEADER_H + bh + GAP
+    canvas = np.zeros((rows * slot_h + STATUS_H, cols * slot_w, 3), dtype=np.uint8)
 
     for i, bot in enumerate(bots):
         board, score, lines, games = bot.snapshot()
         row, col = divmod(i, cols)
-        img = render_slot(board, score, lines, bot.rank, bot.genome.fitness, games)
+        img = render_slot(board, score, lines, bot.rank, bot.genome.fitness, games, cell)
         r0, c0 = row * slot_h, col * slot_w
-        canvas[r0:r0 + HEADER_H + BOARD_H, c0:c0 + BOARD_W] = img
+        canvas[r0:r0 + HEADER_H + bh, c0:c0 + bw] = img
 
     if generation_stats:
         last = generation_stats[-1]
@@ -176,12 +200,13 @@ def stop_bots(bots):
 def main():
     parser = argparse.ArgumentParser(description="Visualize top training genomes as live games")
     parser.add_argument("--save-file", default="save_lines.pkl")
-    parser.add_argument("--count", type=int, default=9,
-                        help="number of bots to show (default 9; use 25 when not training)")
+    parser.add_argument("--count", type=int, default=16,
+                        help="number of bots to show (default 16)")
     parser.add_argument("--fps", type=int, default=10)
     args = parser.parse_args()
 
-    cols = math.ceil(math.sqrt(args.count))
+    cols, rows, cell = best_layout(args.count)
+    print(f"Layout: {cols}x{rows} grid, cell={cell}px, board={10*cell}x{20*cell}px")
 
     if not os.path.isfile(args.save_file):
         print(f"Save file not found: {args.save_file}")
@@ -198,7 +223,7 @@ def main():
 
     print("Running. Press 'q' to quit. Display auto-reloads when save file updates.")
     while True:
-        canvas = make_canvas(bots, cols, gen_stats)
+        canvas = make_canvas(bots, cols, cell, gen_stats)
         cv2.imshow("Tetris Training", canvas)
 
         key = cv2.waitKey(frame_ms) & 0xFF
