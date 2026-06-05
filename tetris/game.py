@@ -26,6 +26,19 @@ class Game:
         self.piece_stats = Counter()
         self.line_combos = Counter()
         self.level = level
+        self._starting_level = level
+        # NES first-advance threshold: min(L*10+10, max(100, L*10-50))
+        # e.g. level 19 → 140 lines before 19→20 (NES counting bug)
+        self._first_advance_lines = min(level * 10 + 10, max(100, level * 10 - 50))
+
+    def _advance_level_if_needed(self):
+        if self.lines < self._first_advance_lines:
+            return
+        new_level = self._starting_level + 1 + (self.lines - self._first_advance_lines) // 10
+        if new_level != self.level:
+            self.level = new_level
+            self.frames_per_cell = frames_per_cell_by_level.get(new_level, 1)
+            self.state.frames_per_cell = self.frames_per_cell
 
     def start(self):
         self.game_thread.start()
@@ -55,6 +68,7 @@ class Game:
                     lines = self.state.check_full_lines()
                     if lines > 0:
                         self.lines += lines
+                        self._advance_level_if_needed()
                         if lines <= len(score_by_number_of_lines_cleared):
                             self.score += score_by_number_of_lines_cleared[lines - 1] * (self.level + 1)
                         self.line_combos[lines] += 1
