@@ -108,6 +108,26 @@ class GA:
             self.genome_count += 1
         return children
 
+    def _is_stalled(self, window: int = 20, min_improvement: float = 0.005) -> bool:
+        if len(self.best_per_generation) < window:
+            return False
+        recent = [g.fitness for g in self.best_per_generation[-window:]]
+        oldest, newest = recent[0], recent[-1]
+        if oldest == 0:
+            return newest == 0
+        return (newest - oldest) / abs(oldest) < min_improvement
+
+    def _restart_from_best(self, best_genome: Genome) -> List[Genome]:
+        children = [best_genome]
+        for _ in range(self.population_size - 1):
+            child_weights = Weights()
+            for field in child_weights.__dict__.keys():
+                value = getattr(best_genome.weights, field) + random.gauss(0, 0.5)
+                setattr(child_weights, field, value)
+            children.append(Genome(weights=child_weights, id=self.genome_count))
+            self.genome_count += 1
+        return children
+
     def run(self, resume: bool = False):
         if resume and os.path.isfile(self.save_file):
             # Save files are written by this same process — trusted local data only.
@@ -143,9 +163,13 @@ class GA:
             for gen in range(current, self.generations):
                 print(f"Generation: {gen}")
                 best = self.select_best(genomes)
-                genomes = self.combine_and_mutate(best)
                 print(best[0])
                 self.best_per_generation.append(best[0])
+                if self._is_stalled():
+                    print(f"Stall detected at generation {gen}, restarting population from best genome")
+                    genomes = self._restart_from_best(best[0])
+                else:
+                    genomes = self.combine_and_mutate(best)
                 with open(self.save_file, "wb") as f:
                     pickle.dump(SaveState(self.best_per_generation, genomes, gen + 1, self.command_args, self.piece_lists), f)
         finally:
