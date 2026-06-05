@@ -24,6 +24,7 @@ class SaveState:
     genomes: List[Genome]
     current_generation: int
     command_args: dict = None
+    piece_lists: list = None
 
 
 class GA:
@@ -35,6 +36,7 @@ class GA:
         save_file: str,
         command_args: dict = None,
         genome_workers: int = 1,
+        piece_lists: list = None,
     ):
         self.population_size = population_size
         self.generations = generations
@@ -42,6 +44,7 @@ class GA:
         self.save_file = save_file
         self.command_args = command_args
         self.genome_workers = genome_workers
+        self.piece_lists = piece_lists
         self.best_per_generation = []
         self._pool = None
 
@@ -116,6 +119,10 @@ class GA:
             saved_args = getattr(save, "command_args", None)
             if saved_args:
                 print(f"Originally trained with args: {saved_args}")
+            saved_piece_lists = getattr(save, "piece_lists", None)
+            if saved_piece_lists:
+                self.piece_lists = saved_piece_lists
+                print(f"Restored {len(self.piece_lists)} piece lists from save file")
         else:
             genomes = self.create_initial()
             current = 0
@@ -140,7 +147,7 @@ class GA:
                 print(best[0])
                 self.best_per_generation.append(best[0])
                 with open(self.save_file, "wb") as f:
-                    pickle.dump(SaveState(self.best_per_generation, genomes, gen + 1, self.command_args), f)
+                    pickle.dump(SaveState(self.best_per_generation, genomes, gen + 1, self.command_args, self.piece_lists), f)
         finally:
             if self._pool is not None:
                 self._pool.terminate()

@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 import argparse
+import os
+import pickle
 from random import randint
 
 from bot import GA, RandomBot, WeightedBot, Weights
@@ -27,17 +29,18 @@ def generate_piece_lists(num_pieces: int, seed: int = 0) -> list[Piece]:
 class GenomeFitness:
     """Picklable fitness callable for genome-level parallel evaluation."""
 
-    def __init__(self, piece_lists, result_key, scoring, bot_model):
+    def __init__(self, piece_lists, result_key, scoring, bot_model, max_lines=None):
         self.piece_lists = piece_lists
         self.result_key = result_key
         self.scoring = scoring
         self.bot_model = bot_model
+        self.max_lines = max_lines
 
     def __call__(self, weights):
         bot = create_bot(self.bot_model, weights=weights, parallel=False, scoring=self.scoring)
         results = []
         for piece_list in self.piece_lists:
-            result = evaluate_with_bot(bot, piece_list)
+            result = evaluate_with_bot(bot, piece_list, max_lines=self.max_lines)
             results.append(result[self.result_key])
         results = sorted(results)
         results = results[int(len(results) * 0.33) :]
@@ -54,18 +57,28 @@ def main(args):
     print(f"Genome workers: {genome_workers}")
     print("-" * 50)
 
-    piece_lists = []
-    for i in range(args.num_iterations):
-        piece_lists.append(generate_piece_lists(1000, randint(0, 10000000)))
-
-    fitness_methods = {
-        "score": top_3rd_avg_of(piece_lists, "score", args.scoring, args.bot_model),
-        "lines": top_3rd_avg_of(piece_lists, "lines", args.scoring, args.bot_model),
-    }
     if args.save_file:
         filename = args.save_file
     else:
         filename = f"save_{args.fitness_method}.pkl"
+
+    piece_lists = []
+    if os.path.isfile(filename):
+        # Save files are written by this same process — trusted local data only.
+        with open(filename, "rb") as f:
+            save = pickle.load(f)
+        piece_lists = getattr(save, "piece_lists", None) or []
+        if piece_lists:
+            print(f"Using {len(piece_lists)} piece lists from save file")
+    if not piece_lists:
+        for i in range(args.num_iterations):
+            piece_lists.append(generate_piece_lists(1000, randint(0, 10000000)))
+
+    max_lines = args.max_lines or None
+    fitness_methods = {
+        "score": top_two_thirds_avg_of(piece_lists, "score", args.scoring, args.bot_model, max_lines),
+        "lines": top_two_thirds_avg_of(piece_lists, "lines", args.scoring, args.bot_model, max_lines),
+    }
     ga = GA(
         args.population,
         args.generations,
@@ -73,6 +86,7 @@ def main(args):
         filename,
         command_args=vars(args),
         genome_workers=genome_workers,
+        piece_lists=piece_lists,
     )
     best = ga.run(resume=True)
     print("All Done")
@@ -90,17 +104,19 @@ def create_bot(bot_model: str, weights: Weights = None, parallel: bool = True, s
         raise ValueError(f"Unknown bot model: {bot_model}")
 
 
-def top_3rd_avg_of(piece_lists, result_key, scoring, bot_model):
-    return GenomeFitness(piece_lists, result_key, scoring, bot_model)
+def top_two_thirds_avg_of(piece_lists, result_key, scoring, bot_model, max_lines=None):
+    return GenomeFitness(piece_lists, result_key, scoring, bot_model, max_lines)
 
 
-def evaluate_with_bot(bot: WeightedBot, piece_list: list[Piece]):
+def evaluate_with_bot(bot: WeightedBot, piece_list: list[Piece], max_lines: int = None):
     game = Game(level=19, piece_list=piece_list)
     drop_enabled = False
     move_count = 0
     move_sequence = []
     game.start()
     while not game.game_over:
+        if max_lines and game.lines >= max_lines:
+            break
         if game.state.new_piece() and not move_sequence:
             drop_enabled = False
             move_count += 1
@@ -162,6 +178,12 @@ if __name__ == "__main__":
         help="number of iterations to average top 3rd",
     )
     parser.add_argument("--parallel-runners", dest="num_of_parallel", type=int, default=8)
+    parser.add_argument(
+        "--max-lines",
+        type=int,
+        default=230,
+        help="stop each evaluation game after this many lines cleared (0 = no cap)",
+    )
     parser.add_argument("--scoring", choices=["v1", "v2"], default="v2")
     parser.add_argument(
         "--bot-model", choices=["WeightedBot", "RandomBot"], default="WeightedBot", help="bot model to train"

@@ -11,6 +11,7 @@ Identified improvements to make the bot train on a simulation that better matche
 **What was implemented:** `execute_move` in `bot/weighted_bot/evaluate.py` now pre-drops the piece by the number of rows it would fall during key execution (based on `state.frames_per_cell`). Moves that can't be completed from the dropped position raise `InvalidMove` and are filtered out.
 
 **Still to consider:**
+
 - `frames_per_cell` is fixed at the starting level for the entire game. In real play the level increases every 10 lines, making pieces fall faster. The simulation could update `frames_per_cell` as lines are cleared during training.
 - The 44ms/keypress constant (`MS_PER_KEYPRESS` in `tetris/constants.py`) reflects the current keyboard code's hold+gap timing. If that timing is tuned, this constant should be updated to match.
 
@@ -36,10 +37,12 @@ The GA would then learn the optimal penalty value (expected to be negative — m
 **Problem:** `self.level` in `game.py` is set once at initialization and never updated. Real NES Tetris has a specific advancement rule: when starting at level 19, the first level-up (19→20) requires **140 lines** cleared (due to a NES counting bug — not 10 or 200), then every subsequent level advances every 10 lines. The full 19–28 plateau therefore spans **230 lines** (140 + 9×10). At level 29, drop speed increases to 1 frame/cell, which the bot can't handle.
 
 Two consequences:
+
 1. **Drop speed never updates** — the simulation always runs at level 19 speed (2 frames/cell). This is accidentally correct for the 19–28 plateau since that speed is constant, but it means the game never ends from hitting level 29 — it runs until the bot dies.
 2. **Score multiplier is wrong** — score is calculated as `score_by_number_of_lines_cleared[lines-1] * (self.level + 1)`, which stays at ×20 forever. In real play it increases to ×21, ×22... up to ×29 as levels advance. This affects `--fitness score` training: all lines earn the same multiplier regardless of when they're cleared.
 
 **Options:**
+
 - Implement the NES advancement rule in `game.py`: track cumulative lines, apply the 140-line first-advance rule, then update `self.level` and `self.frames_per_cell` every 10 lines after that.
 - Cap training games at 230 lines (see item 6) so the simulation matches the plateau boundary without needing full level advancement.
 
@@ -63,6 +66,7 @@ This inflates fitness scores relative to the name's implication. The behavior ma
 **Insight from meatfighter.com/tetrisairevisited:** The article trains on exactly "100 runs of the 19–28 plateau" — each evaluation game stops at 230 lines cleared rather than running to game over. The 230-line cap corresponds to the full plateau: 140 lines for 19→20, then 10 per level through 28→29.
 
 **Benefits:**
+
 - Makes each evaluation faster for well-performing bots (no time wasted simulating level 29+ where the bot quickly dies anyway)
 - Keeps the fitness signal entirely within the relevant speed regime
 - Allows more game iterations in the same wall time
