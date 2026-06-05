@@ -120,7 +120,6 @@ class Evaluator:
             try:
                 execute_move(state, rot, trans)
             except InvalidMove:
-                print(f"Invalid move {p} for piece {state.current_piece}")
                 continue
 
             score, parameters = self.scoring_func(state)
