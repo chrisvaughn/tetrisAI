@@ -263,5 +263,8 @@ class GameState:
     def row_transitions(self) -> int:
         return self.board.count_row_transitions()
 
+    def spawn_zone_filled(self) -> int:
+        return self.board.spawn_zone_filled()
+
     def unreachable_cells(self) -> int:
         return self.board.count_unreachable_cells()

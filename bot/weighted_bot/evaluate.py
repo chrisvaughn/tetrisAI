@@ -23,6 +23,7 @@ class Weights:
     total_cells: float = 0
     total_weighted_cells: float = 0
     row_transitions: float = 0
+    move_cost: float = 0
 
 
 @dataclass
@@ -123,6 +124,9 @@ class Evaluator:
                 continue
 
             score, parameters = self.scoring_func(state)
+            keypresses = (1 if rot == 3 else rot) + abs(trans)
+            score += self._weights.move_cost * keypresses
+            parameters["values"]["move_cost"] = keypresses
             move = Move(
                 rot,
                 trans,
@@ -153,6 +157,9 @@ class Evaluator:
         unreachable = state.unreachable_cells()
         if unreachable > 0:
             score -= 1000 * unreachable
+        spawn_blocked = state.spawn_zone_filled()
+        if spawn_blocked > 0:
+            score -= 1000 * spawn_blocked
         return score, {"values": values, "weights": self._weights}
 
     def scoring_v2(self, state: GameState) -> Tuple[float, dict]:
@@ -178,6 +185,9 @@ class Evaluator:
         unreachable = state.unreachable_cells()
         if unreachable > 0:
             score -= 1000 * unreachable
+        spawn_blocked = state.spawn_zone_filled()
+        if spawn_blocked > 0:
+            score -= 1000 * spawn_blocked
         return score, {"values": values, "weights": self._weights}
 
     def evaluate_all_moves(self) -> List[Move]:

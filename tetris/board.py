@@ -117,6 +117,10 @@ class Board:
         weighted_cells = int((rows * cell_mask).sum())
         return cells, weighted_cells
 
+    def spawn_zone_filled(self) -> int:
+        # Rows 0-1, columns 3-6 (0-indexed) cover the piece spawn area (center x=6 1-based).
+        return int(self.board[0:2, 3:7].sum())
+
     def count_row_transitions(self) -> int:
         padded = np.pad(self.board, ((0, 0), (1, 1)), constant_values=1)
         return int((np.diff(padded, axis=1) != 0).sum())
