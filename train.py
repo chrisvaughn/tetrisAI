@@ -43,7 +43,7 @@ class GenomeFitness:
             result = evaluate_with_bot(bot, piece_list, max_lines=self.max_lines)
             results.append(result[self.result_key])
         results = sorted(results)
-        results = results[int(len(results) * 0.33) :]
+        results = results[int(len(results) * 0.67) :]
         return sum(results) / len(results)
 
 
