@@ -25,6 +25,8 @@ class SaveState:
     current_generation: int
     command_args: dict = None
     piece_lists: list = None
+    generation_stats: list = None
+    restart_generations: list = None
 
 
 class GA:
@@ -46,6 +48,8 @@ class GA:
         self.genome_workers = genome_workers
         self.piece_lists = piece_lists
         self.best_per_generation = []
+        self.generation_stats = []
+        self.restart_generations = []
         self._pool = None
 
         self.select_best_n = 15
@@ -143,6 +147,8 @@ class GA:
             if saved_piece_lists:
                 self.piece_lists = saved_piece_lists
                 print(f"Restored {len(self.piece_lists)} piece lists from save file")
+            self.generation_stats = getattr(save, "generation_stats", None) or []
+            self.restart_generations = getattr(save, "restart_generations", None) or []
         else:
             genomes = self.create_initial()
             current = 0
@@ -163,15 +169,22 @@ class GA:
             for gen in range(current, self.generations):
                 print(f"Generation: {gen}")
                 best = self.select_best(genomes)
+                fitnesses = [g.fitness for g in genomes]
+                mean = sum(fitnesses) / len(fitnesses)
+                std = (sum((f - mean) ** 2 for f in fitnesses) / len(fitnesses)) ** 0.5
+                stats = {"gen": gen, "best": best[0].fitness, "mean": mean, "std": std}
+                self.generation_stats.append(stats)
+                print(f"  best={stats['best']:.2f}  mean={mean:.2f}  std={std:.2f}")
                 print(best[0])
                 self.best_per_generation.append(best[0])
                 if self._is_stalled():
                     print(f"Stall detected at generation {gen}, restarting population from best genome")
+                    self.restart_generations.append(gen)
                     genomes = self._restart_from_best(best[0])
                 else:
                     genomes = self.combine_and_mutate(best)
                 with open(self.save_file, "wb") as f:
-                    pickle.dump(SaveState(self.best_per_generation, genomes, gen + 1, self.command_args, self.piece_lists), f)
+                    pickle.dump(SaveState(self.best_per_generation, genomes, gen + 1, self.command_args, self.piece_lists, self.generation_stats, self.restart_generations), f)
         finally:
             if self._pool is not None:
                 self._pool.terminate()
