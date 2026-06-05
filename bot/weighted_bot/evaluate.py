@@ -22,6 +22,7 @@ class Weights:
     deep_well_count: float = 0
     total_cells: float = 0
     total_weighted_cells: float = 0
+    row_transitions: float = 0
 
 
 @dataclass
@@ -165,6 +166,7 @@ class Evaluator:
             "depth_weighted_holes": depth_weighted,
             "cumulative_height": state.cumulative_height(),
             "roughness": state.roughness(),
+            "row_transitions": state.row_transitions(),
             "relative_height": state.relative_height(),
             "absolute_height": state.absolute_height(),
             "total_cells": cells,
@@ -205,6 +207,7 @@ class Evaluator:
         all_moves = sorted(
             self.evaluate_all_moves(),
             key=lambda x: (
+                1 if x.lines_completed == 4 else 0,
                 x.score,
                 x.lines_completed,
                 -abs(x.translation),

@@ -117,6 +117,10 @@ class Board:
         weighted_cells = int((rows * cell_mask).sum())
         return cells, weighted_cells
 
+    def count_row_transitions(self) -> int:
+        padded = np.pad(self.board, ((0, 0), (1, 1)), constant_values=1)
+        return int((np.diff(padded, axis=1) != 0).sum())
+
     def count_unreachable_cells(self) -> int:
         """Count empty cells sealed off from the top by filled cells."""
         board = self.board

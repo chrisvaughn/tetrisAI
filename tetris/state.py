@@ -260,5 +260,8 @@ class GameState:
     def count_cells(self) -> (int, int):
         return self.board.count_cells()
 
+    def row_transitions(self) -> int:
+        return self.board.count_row_transitions()
+
     def unreachable_cells(self) -> int:
         return self.board.count_unreachable_cells()
