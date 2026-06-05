@@ -22,7 +22,7 @@ import numpy as np
 from bot import WeightedBot
 from tetris import Game
 
-HEADER_H = 22
+HEADER_H = 32
 GAP = 5
 STATUS_H = 30
 MENUBAR_H = 25
@@ -150,9 +150,8 @@ def render_slot(board, score, lines, rank, fitness, games, cell):
     bw, bh = 10 * cell, 20 * cell
     h = HEADER_H + bh
     img = np.zeros((h, bw, 3), dtype=np.uint8)
-    scale = max(0.75, cell / 10)
-    cv2.putText(img, f"#{rank}  fit:{fitness:.0f}", (2, 12), cv2.FONT_HERSHEY_PLAIN, scale, COLOR_TEXT, 1)
-    cv2.putText(img, f"s:{score} l:{lines} g:{games}", (2, 21), cv2.FONT_HERSHEY_PLAIN, scale * 0.85, COLOR_TEXT, 1)
+    cv2.putText(img, f"#{rank}  fit:{fitness:.0f}", (3, 13), cv2.FONT_HERSHEY_PLAIN, 1.0, COLOR_TEXT, 1)
+    cv2.putText(img, f"s:{score}  l:{lines}  g:{games}", (3, 27), cv2.FONT_HERSHEY_PLAIN, 1.0, COLOR_TEXT, 1)
     for r in range(20):
         for c in range(10):
             x0, y0 = c * cell, HEADER_H + r * cell
