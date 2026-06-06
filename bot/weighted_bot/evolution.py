@@ -52,10 +52,11 @@ class GA:
         self.restart_generations = []
         self._pool = None
 
-        self.select_best_n = 15
-        self.mutation_rate = 0.05
-        self.mutation_step = 0.2
+        self.select_best_n = 20
+        self.mutation_rate = 0.15
+        self.mutation_step = 0.4
         self.genome_count = 0
+        self._last_restart_gen = 0
 
     def create_initial(self) -> List[Genome]:
         genomes = []
@@ -112,7 +113,9 @@ class GA:
             self.genome_count += 1
         return children
 
-    def _is_stalled(self, window: int = 20, min_improvement: float = 0.005) -> bool:
+    def _is_stalled(self, current_gen: int, window: int = 20, min_improvement: float = 0.005) -> bool:
+        if current_gen - self._last_restart_gen < window:
+            return False
         if len(self.best_per_generation) < window:
             return False
         recent = [g.fitness for g in self.best_per_generation[-window:]]
@@ -126,7 +129,7 @@ class GA:
         for _ in range(self.population_size - 1):
             child_weights = Weights()
             for field in child_weights.__dict__.keys():
-                value = getattr(best_genome.weights, field) + random.gauss(0, 0.5)
+                value = getattr(best_genome.weights, field) + random.gauss(0, 1.0)
                 setattr(child_weights, field, value)
             children.append(Genome(weights=child_weights, id=self.genome_count))
             self.genome_count += 1
@@ -180,9 +183,10 @@ class GA:
                 print(f"  best={stats['best']:.2f}  mean={mean:.2f}  std={std:.2f}")
                 print(best[0])
                 self.best_per_generation.append(best[0])
-                if self._is_stalled():
+                if self._is_stalled(gen):
                     print(f"Stall detected at generation {gen}, restarting population from best genome")
                     self.restart_generations.append(gen)
+                    self._last_restart_gen = gen
                     genomes = self._restart_from_best(best[0])
                 else:
                     genomes = self.combine_and_mutate(best)

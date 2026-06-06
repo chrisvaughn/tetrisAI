@@ -71,6 +71,11 @@ class Piece:
     def rot_cw(self, rot: int = 1):
         self.current_shape_idx = (self.current_shape_idx + rot) % len(self.shapes)
 
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+        if "_cells_cache" not in self.__dict__:
+            self._cells_cache = {}
+
     def clone(self):
         new_piece = Piece.__new__(Piece)
         new_piece.name = self.name
@@ -81,6 +86,8 @@ class Piece:
         new_piece.current_shape_idx = self.current_shape_idx
         new_piece._detection_shapes = self._detection_shapes
         new_piece._next_piece_detection_shape = self._next_piece_detection_shape
+        if not hasattr(self, "_cells_cache"):
+            self._cells_cache = {}
         new_piece._cells_cache = self._cells_cache  # shared; shapes are immutable
         return new_piece
 
