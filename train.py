@@ -7,6 +7,7 @@ from random import randint
 import numpy as np
 
 from bot import GA, RandomBot, WeightedBot, Weights
+from bot.weighted_bot.defined_weights import by_mode as defined_weights_by_mode
 from tetris import Board, Game, GameState, Piece, Tetrominoes, frames_per_cell_by_level
 from tetris.game import score_by_number_of_lines_cleared
 
@@ -32,7 +33,7 @@ def generate_piece_lists(num_pieces: int, seed: int = 0) -> list[Piece]:
 class GenomeFitness:
     """Picklable fitness callable for genome-level parallel evaluation."""
 
-    def __init__(self, piece_lists, result_key, scoring, bot_model, max_lines=None, lookahead=False, beam_width=None):
+    def __init__(self, piece_lists, result_key, scoring, bot_model, max_lines=None, lookahead=False, beam_width=None, fitness_fraction=0.33):
         self.piece_lists = piece_lists
         self.result_key = result_key
         self.scoring = scoring
@@ -40,6 +41,7 @@ class GenomeFitness:
         self.max_lines = max_lines
         self.lookahead = lookahead
         self.beam_width = beam_width
+        self.fitness_fraction = fitness_fraction
 
     def __call__(self, weights):
         bot = create_bot(self.bot_model, weights=weights, parallel=False, scoring=self.scoring, lookahead=self.lookahead, beam_width=self.beam_width)
@@ -48,7 +50,7 @@ class GenomeFitness:
             result = simulate_game(bot, piece_list, max_lines=self.max_lines)
             results.append(result[self.result_key])
         results = sorted(results)
-        results = results[int(len(results) * 0.67) :]
+        results = results[int(len(results) * (1 - self.fitness_fraction)) :]
         return sum(results) / len(results)
 
 
@@ -80,9 +82,26 @@ def main(args):
             piece_lists.append(generate_piece_lists(1000, randint(0, 10000000)))
 
     max_lines = args.max_lines or None
+
+    seed_weights = []
+    for mode in (args.seed_builtin or []):
+        if mode in defined_weights_by_mode:
+            seed_weights.append(defined_weights_by_mode[mode])
+            print(f"Seeding from built-in weights: {mode}")
+    for seed_file in (args.seed_file or []):
+        if os.path.isfile(seed_file):
+            # Save files are written by this same process — trusted local data only.
+            with open(seed_file, "rb") as f:
+                seed_save = pickle.load(f)
+            best = max(seed_save.best_for_each_generation, key=lambda g: g.fitness)
+            seed_weights.append(best.weights)
+            print(f"Seeding from {seed_file}: genome id={best.id} fitness={best.fitness:.4f}")
+    if seed_weights:
+        print(f"{len(seed_weights)} seed(s) × {args.seeds_per_genome} variants = {len(seed_weights) * args.seeds_per_genome} seeded genomes")
+
     fitness_methods = {
-        "score": top_two_thirds_avg_of(piece_lists, "score", args.scoring, args.bot_model, max_lines, args.lookahead, args.beam_width),
-        "lines": top_two_thirds_avg_of(piece_lists, "lines", args.scoring, args.bot_model, max_lines, args.lookahead, args.beam_width),
+        "score": top_two_thirds_avg_of(piece_lists, "score", args.scoring, args.bot_model, max_lines, args.lookahead, args.beam_width, args.fitness_fraction),
+        "lines": top_two_thirds_avg_of(piece_lists, "lines", args.scoring, args.bot_model, max_lines, args.lookahead, args.beam_width, args.fitness_fraction),
     }
     ga = GA(
         args.population,
@@ -92,6 +111,9 @@ def main(args):
         command_args=vars(args),
         genome_workers=genome_workers,
         piece_lists=piece_lists,
+        seed_weights=seed_weights,
+        seeds_per_genome=args.seeds_per_genome,
+        seed_noise=args.seed_noise,
     )
     best = ga.run(resume=True)
     print("All Done")
@@ -109,8 +131,8 @@ def create_bot(bot_model: str, weights: Weights = None, parallel: bool = True, s
         raise ValueError(f"Unknown bot model: {bot_model}")
 
 
-def top_two_thirds_avg_of(piece_lists, result_key, scoring, bot_model, max_lines=None, lookahead=False, beam_width=None):
-    return GenomeFitness(piece_lists, result_key, scoring, bot_model, max_lines, lookahead, beam_width)
+def top_two_thirds_avg_of(piece_lists, result_key, scoring, bot_model, max_lines=None, lookahead=False, beam_width=None, fitness_fraction=0.33):
+    return GenomeFitness(piece_lists, result_key, scoring, bot_model, max_lines, lookahead, beam_width, fitness_fraction)
 
 
 def simulate_game(bot, piece_list: list[Piece], max_lines: int = None, level: int = 19):
@@ -243,5 +265,10 @@ if __name__ == "__main__":
     )
     parser.add_argument("--lookahead", action="store_true", default=False, help="evaluate next piece for each candidate move")
     parser.add_argument("--beam-width", dest="beam_width", type=int, default=None, help="limit lookahead to top-N level-1 candidates (default: all)")
+    parser.add_argument("--fitness-fraction", dest="fitness_fraction", type=float, default=0.33, help="top fraction of games used for fitness (default: 0.33)")
+    parser.add_argument("--seed-file", dest="seed_file", action="append", metavar="PATH", help="seed population from best genome in save file (repeatable)")
+    parser.add_argument("--seed-builtin", dest="seed_builtin", action="append", choices=["lines", "score"], metavar="{lines,score}", help="seed population from built-in defined weights (repeatable)")
+    parser.add_argument("--seeds-per-genome", dest="seeds_per_genome", type=int, default=5, help="variants to generate per seed genome (default: 5)")
+    parser.add_argument("--seed-noise", dest="seed_noise", type=float, default=0.3, help="gauss std for seed variation (default: 0.3)")
     args = parser.parse_args()
     main(args)

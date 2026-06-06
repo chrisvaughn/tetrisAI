@@ -40,6 +40,9 @@ class GA:
         command_args: dict = None,
         genome_workers: int = 1,
         piece_lists: list = None,
+        seed_weights: List[Weights] = None,
+        seeds_per_genome: int = 5,
+        seed_noise: float = 0.3,
     ):
         self.population_size = population_size
         self.generations = generations
@@ -48,6 +51,9 @@ class GA:
         self.command_args = command_args
         self.genome_workers = genome_workers
         self.piece_lists = piece_lists
+        self._seed_weights = seed_weights or []
+        self._seeds_per_genome = seeds_per_genome
+        self._seed_noise = seed_noise
         self.best_per_generation = []
         self.generation_stats = []
         self.restart_generations = []
@@ -61,17 +67,21 @@ class GA:
 
     def create_initial(self) -> List[Genome]:
         genomes = []
-        for i in range(self.population_size):
+
+        for seed in self._seed_weights:
+            for _ in range(self._seeds_per_genome):
+                weights = Weights()
+                for field in weights.__dict__.keys():
+                    base = getattr(seed, field, 0.0)
+                    setattr(weights, field, base + random.gauss(0, self._seed_noise))
+                genomes.append(Genome(weights=weights, fitness=0.0, id=self.genome_count))
+                self.genome_count += 1
+
+        for _ in range(self.population_size - len(genomes)):
             weights = Weights()
             for field in weights.__dict__.keys():
                 setattr(weights, field, random.uniform(-1, 1))
-
-            genome = Genome(
-                weights=weights,
-                fitness=0.0,
-                id=self.genome_count,
-            )
-            genomes.append(genome)
+            genomes.append(Genome(weights=weights, fitness=0.0, id=self.genome_count))
             self.genome_count += 1
 
         return genomes
