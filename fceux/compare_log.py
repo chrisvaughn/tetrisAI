@@ -28,7 +28,6 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from tetris.board import Board
 from tetris.pieces import Tetrominoes
-from tetris.state import nes_prng
 
 # ── Meatfighter orientation offset table ($8A9C) ───────────────────────────
 # Key: NES orientation ID (0-18)

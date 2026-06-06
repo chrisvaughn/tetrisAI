@@ -4,8 +4,11 @@ import os
 import pickle
 from random import randint
 
+import numpy as np
+
 from bot import GA, RandomBot, WeightedBot, Weights
-from tetris import Game, Piece, Tetrominoes
+from tetris import Board, Game, GameState, Piece, Tetrominoes, frames_per_cell_by_level
+from tetris.game import score_by_number_of_lines_cleared
 
 
 def nes_prng(value: int):
@@ -40,7 +43,7 @@ class GenomeFitness:
         bot = create_bot(self.bot_model, weights=weights, parallel=False, scoring=self.scoring)
         results = []
         for piece_list in self.piece_lists:
-            result = evaluate_with_bot(bot, piece_list, max_lines=self.max_lines)
+            result = simulate_game(bot, piece_list, max_lines=self.max_lines)
             results.append(result[self.result_key])
         results = sorted(results)
         results = results[int(len(results) * 0.67) :]
@@ -106,6 +109,54 @@ def create_bot(bot_model: str, weights: Weights = None, parallel: bool = True, s
 
 def top_two_thirds_avg_of(piece_lists, result_key, scoring, bot_model, max_lines=None):
     return GenomeFitness(piece_lists, result_key, scoring, bot_model, max_lines)
+
+
+def simulate_game(bot, piece_list: list[Piece], max_lines: int = None, level: int = 19):
+    """Fast synchronous game simulation for training — no threading, no sleeping."""
+    state = GameState(piece_list=list(piece_list))
+    state.board = Board()
+    state.frames_per_cell = frames_per_cell_by_level[level]
+
+    lines = 0
+    score = 0
+    starting_level = level
+    first_advance_lines = min(level * 10 + 10, max(100, level * 10 - 50))
+
+    cp = state.select_next_piece()
+    state.update(state.board, cp)
+
+    while True:
+        if max_lines and lines >= max_lines:
+            break
+        if not state.piece_list:
+            break
+
+        bot.update_state(state)
+        try:
+            best_move, _, _ = bot.get_best_move(debug=False)
+        except IndexError:
+            break
+        end = best_move.end_state
+
+        if np.any(end.board.board[0] != 0):
+            break
+
+        cleared = best_move.lines_completed
+        if cleared > 0:
+            lines += cleared
+            if lines >= first_advance_lines:
+                new_level = starting_level + 1 + (lines - first_advance_lines) // 10
+                if new_level != level:
+                    level = new_level
+                    state.frames_per_cell = frames_per_cell_by_level.get(level, 1)
+            if cleared <= len(score_by_number_of_lines_cleared):
+                score += score_by_number_of_lines_cleared[cleared - 1] * (level + 1)
+
+        state.board = end.board
+        cp = state.select_next_piece()
+        state.update(state.board, cp)
+
+    return {"lines": lines, "score": score}
 
 
 def evaluate_with_bot(bot: WeightedBot, piece_list: list[Piece], max_lines: int = None):

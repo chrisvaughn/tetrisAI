@@ -77,12 +77,20 @@ def execute_move(state: GameState, rot: int, trans: int):
     if trans > 0 and not state.move_right(trans):
         raise InvalidMove(state.current_piece)
 
-    # drop to the bottom
-    _, y = state.current_piece.zero_based_corner_xy
-    y = y + state.current_piece.shape.shape[0]
-    moves = state.board.rows - y - state.absolute_height() - 1
-    if moves > 0:
-        state.move_down(moves)
+    # Fast drop: compute exact landing row from column peaks
+    px, py = state.current_piece.zero_based_corner_xy
+    peaks = state.board._get_peaks()
+    drop = 21  # sentinel: no visible cells yet
+    for cy, cx in state.current_piece.cell_tuples:
+        y = py + cy
+        if y >= 0:
+            d = int(peaks[px + cx]) - y - 1
+            if d < drop:
+                drop = d
+    if drop < 21:  # at least one cell was visible
+        drop = max(0, drop)
+        if drop > 0:
+            state.current_piece.move_down(drop)
     while state.move_down_possible():
         state.move_down()
     state.move_down()

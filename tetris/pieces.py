@@ -1,4 +1,3 @@
-import copy
 from typing import List, Tuple
 
 import numpy as np
@@ -16,6 +15,7 @@ class Piece:
         self.current_shape_idx = default_shape_idx
         self._detection_shapes = None
         self._next_piece_detection_shape = None
+        self._cells_cache: dict = {}
 
     def __str__(self) -> str:
         return f"Piece<name: {self.name}, x: {self._x}, y: {self._y}, rotation: {self.current_shape_idx}>"
@@ -81,7 +81,35 @@ class Piece:
         new_piece.current_shape_idx = self.current_shape_idx
         new_piece._detection_shapes = self._detection_shapes
         new_piece._next_piece_detection_shape = self._next_piece_detection_shape
+        new_piece._cells_cache = self._cells_cache  # shared; shapes are immutable
         return new_piece
+
+    @property
+    def cells(self):
+        """Cached (row_indices, col_indices) numpy arrays for the current rotation."""
+        idx = self.current_shape_idx
+        if idx not in self._cells_cache:
+            self._cells_cache[idx] = np.nonzero(self.shapes[idx])
+        return self._cells_cache[idx]
+
+    def cells_for_rotation(self, idx: int):
+        """Cached numpy cell arrays for an arbitrary rotation index."""
+        if idx not in self._cells_cache:
+            self._cells_cache[idx] = np.nonzero(self.shapes[idx])
+        return self._cells_cache[idx]
+
+    def cell_tuples_for_rotation(self, idx: int):
+        """Cached list of (row, col) int tuples for an arbitrary rotation index."""
+        key = (idx, 't')
+        if key not in self._cells_cache:
+            ys, xs = np.nonzero(self.shapes[idx])
+            self._cells_cache[key] = list(zip(ys.tolist(), xs.tolist()))
+        return self._cells_cache[key]
+
+    @property
+    def cell_tuples(self):
+        """Cached list of (row, col) int tuples for the current rotation."""
+        return self.cell_tuples_for_rotation(self.current_shape_idx)
 
     @property
     def detection_shapes(self) -> List[np.ndarray]:

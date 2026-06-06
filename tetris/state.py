@@ -1,3 +1,4 @@
+from collections import deque
 from typing import Union
 
 import cv2
@@ -33,12 +34,12 @@ class GameState:
         self._completed_lines: int = 0
         self._last_rn: int = seed
         self._first_piece: bool = True
-        self.piece_list = piece_list
+        self.piece_list = deque(piece_list) if piece_list is not None else None
         self.frames_per_cell: int = 0  # 0 = no fall simulation; set by Game or caller
 
     def select_next_piece(self) -> Piece:
         if self.piece_list:
-            return self.piece_list.pop(0)
+            return self.piece_list.popleft()
 
         value = nes_prng(self._last_rn)
         self._last_rn = value
@@ -147,52 +148,73 @@ class GameState:
 
     def move_down_possible(self, moves: int = 1) -> bool:
         px, py = self.current_piece.zero_based_corner_xy
-        py = py + moves
-        for (y, x), value in np.ndenumerate(self.current_piece.shape):
-            if value != 0 and py + y >= 0:
-                if py + y >= self.board.rows or px + x >= self.board.columns or self.board.board[py + y, px + x] != 0:
-                    return False
+        py_new = py + moves
+        board = self.board.board
+        for cy, cx in self.current_piece.cell_tuples:
+            y = py_new + cy
+            if y < 0:
+                continue
+            x = px + cx
+            if y >= Board.rows or x < 0 or x >= Board.columns or board[y, x]:
+                return False
         return True
 
     def move_left_possible(self, moves: int = 1) -> bool:
         px, py = self.current_piece.zero_based_corner_xy
-        px = px - moves
-        for (y, x), value in np.ndenumerate(self.current_piece.shape):
-            if value != 0 and py + y >= 0:
-                if px + x < 0 or self.board.board[py + y, px + x] != 0:
-                    return False
+        px_new = px - moves
+        board = self.board.board
+        for cy, cx in self.current_piece.cell_tuples:
+            y = py + cy
+            if y < 0:
+                continue
+            x = px_new + cx
+            if x < 0 or board[y, x]:
+                return False
         return True
 
     def move_right_possible(self, moves: int = 1) -> bool:
         px, py = self.current_piece.zero_based_corner_xy
-        px = px + moves
-        for (y, x), value in np.ndenumerate(self.current_piece.shape):
-            if value != 0 and px + x >= 0 and py + y >= 0:
-                if px + x >= self.board.columns or self.board.board[py + y, px + x] != 0:
-                    return False
+        px_new = px + moves
+        board = self.board.board
+        for cy, cx in self.current_piece.cell_tuples:
+            y = py + cy
+            if y < 0:
+                continue
+            x = px_new + cx
+            if x >= Board.columns or board[y, x]:
+                return False
         return True
 
     def rot_ccw_possible(self, rot: int = 1):
-        p = self.current_piece.clone()
-        p.rot_ccw(rot)
-        return self.rot_possible(p.shape)
+        new_idx = (self.current_piece.current_shape_idx - rot) % len(self.current_piece.shapes)
+        return self._rot_idx_possible(new_idx)
 
     def rot_cw_possible(self, rot: int = 1):
-        p = self.current_piece.clone()
-        p.rot_cw(rot)
-        return self.rot_possible(p.shape)
+        new_idx = (self.current_piece.current_shape_idx + rot) % len(self.current_piece.shapes)
+        return self._rot_idx_possible(new_idx)
+
+    def _rot_idx_possible(self, shape_idx: int) -> bool:
+        px, py = self.current_piece.zero_based_corner_xy
+        board = self.board.board
+        for cy, cx in self.current_piece.cell_tuples_for_rotation(shape_idx):
+            y = py + cy
+            if y < 0:
+                continue
+            x = px + cx
+            if y >= Board.rows or x < 0 or x >= Board.columns or board[y, x]:
+                return False
+        return True
 
     def rot_possible(self, shape) -> bool:
         px, py = self.current_piece.zero_based_corner_xy
-        for (y, x), value in np.ndenumerate(shape):
-            if value != 0 and py + y >= 0:
-                if (
-                    py + y >= self.board.rows
-                    or px + x < 0
-                    or px + x >= self.board.columns
-                    or self.board.board[py + y, px + x] != 0
-                ):
-                    return False
+        board = self.board.board
+        for cy, cx in zip(*np.nonzero(shape)):
+            y = int(py + cy)
+            if y < 0:
+                continue
+            x = int(px + cx)
+            if y >= Board.rows or x < 0 or x >= Board.columns or board[y, x]:
+                return False
         return True
 
     def rot_ccw(self, rot: int = 1) -> bool:
@@ -209,16 +231,11 @@ class GameState:
 
     def place_piece_on_board(self):
         px, py = self.current_piece.zero_based_corner_xy
-        for (y, x), value in np.ndenumerate(self.current_piece.shape):
-            if value != 0:
-                try:
-                    self.board.board[
-                        py + y,
-                        px + x,
-                    ] = value
-                except IndexError:
-                    raise InvalidMove(self.current_piece)
-
+        board = self.board.board
+        for cy, cx in self.current_piece.cell_tuples:
+            y = py + cy
+            if y >= 0:
+                board[y, px + cx] = 1
         self.board.updated()
 
     def check_game_over(self):
