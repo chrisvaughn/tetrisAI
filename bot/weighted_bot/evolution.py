@@ -27,6 +27,7 @@ class SaveState:
     piece_lists: list = None
     generation_stats: list = None
     restart_generations: list = None
+    last_restart_gen: int = 0
 
 
 class GA:
@@ -152,12 +153,13 @@ class GA:
                 print(f"Restored {len(self.piece_lists)} piece lists from save file")
             self.generation_stats = getattr(save, "generation_stats", None) or []
             self.restart_generations = getattr(save, "restart_generations", None) or []
+            self._last_restart_gen = getattr(save, "last_restart_gen", 0)
         else:
             genomes = self.create_initial()
             current = 1
             # Write initial snapshot before evaluation so visualizer has something to show.
             with open(self.save_file, "wb") as f:
-                pickle.dump(SaveState(self.best_per_generation, genomes, current, self.command_args, self.piece_lists, self.generation_stats, self.restart_generations), f)
+                pickle.dump(SaveState(self.best_per_generation, genomes, current, self.command_args, self.piece_lists, self.generation_stats, self.restart_generations, self._last_restart_gen), f)
 
         if self.genome_workers > 1:
             try:
@@ -191,7 +193,7 @@ class GA:
                 else:
                     genomes = self.combine_and_mutate(best)
                 with open(self.save_file, "wb") as f:
-                    pickle.dump(SaveState(self.best_per_generation, genomes, gen + 1, self.command_args, self.piece_lists, self.generation_stats, self.restart_generations), f)
+                    pickle.dump(SaveState(self.best_per_generation, genomes, gen + 1, self.command_args, self.piece_lists, self.generation_stats, self.restart_generations, self._last_restart_gen), f)
         finally:
             if self._pool is not None:
                 self._pool.terminate()
