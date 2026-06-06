@@ -14,16 +14,16 @@ from tetris import Game, GameState, Tetrominoes, frames_per_cell_by_level
 from vision import Detectorist
 
 
-def get_bot(bot_model, save_file=None, save_gen=None):
+def get_bot(bot_model, save_file=None, save_gen=None, lookahead=False, beam_width=None):
     """Create a bot instance based on the bot-model argument"""
     if bot_model == "Random":
         return RandomBot("RandomBot")
     elif bot_model == "WeightedBotLines":
         weights = get_weights_from_save("lines", save_file, save_gen)
-        return WeightedBot(weights, name="WeightedBotLines")
+        return WeightedBot(weights, name="WeightedBotLines", lookahead=lookahead, beam_width=beam_width)
     elif bot_model == "WeightedBotScore":
         weights = get_weights_from_save("score", save_file, save_gen)
-        return WeightedBot(weights, name="WeightedBotScore")
+        return WeightedBot(weights, name="WeightedBotScore", lookahead=lookahead, beam_width=beam_width)
     else:
         raise ValueError(f"Unknown bot model: {bot_model}")
 
@@ -56,7 +56,7 @@ def print_final_stats(lines: int, piece_stats: Counter, combos: Counter):
 def main(args):
     # init evaluation pool
     get_pool()
-    bot = get_bot(args.bot_model, args.save_file, args.save_gen)
+    bot = get_bot(args.bot_model, args.save_file, args.save_gen, args.lookahead, args.beam_width)
     print(f"Using bot: {bot.name}")
     print(f"Bot stats: {bot.get_stats()}")
     if args.emulator:
@@ -251,6 +251,8 @@ if __name__ == "__main__":
         help="enable debug info to be logged",
     )
     parser.add_argument("--scoring", choices=["v1", "v2"], default="v2")
+    parser.add_argument("--lookahead", action="store_true", default=False, help="evaluate next piece for each candidate move")
+    parser.add_argument("--beam-width", dest="beam_width", type=int, default=None, help="limit lookahead to top-N level-1 candidates (default: all)")
 
     args = parser.parse_args()
     try:

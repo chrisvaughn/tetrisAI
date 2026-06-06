@@ -103,10 +103,14 @@ class Evaluator:
         weights: Weights,
         parallel: bool = True,
         scoring: str = "v1",
+        lookahead: bool = False,
+        beam_width: int = None,
     ):
         self._initial_state = state
         self._weights = weights
         self.parallel = parallel
+        self._lookahead = lookahead
+        self._beam_width = beam_width
         if scoring == "v1":
             self.scoring_func = self.scoring_v1
         elif scoring == "v2":
@@ -219,10 +223,47 @@ class Evaluator:
 
         return possible_moves
 
+    def _best_lookahead_score(self, move: Move) -> float:
+        """Evaluate all placements of the next piece from move.end_state and return the best score."""
+        state = move.end_state.clone()
+        # end_state already has lines cleared (scoring_func calls check_full_lines).
+        # If game is over or next piece unknown, fall back to the level-1 score.
+        if state.next_piece is None or state.check_game_over():
+            return move.score
+        state.current_piece = state.next_piece
+        state.next_piece = None
+        best = float("-inf")
+        piece = state.current_piece.clone()
+        for rot in range(len(piece.shapes)):
+            p = piece.clone()
+            if rot > 0:
+                p.rot_cw(rot)
+            left, right = p.possible_translations()
+            for trans in range(-left, right + 1):
+                s = state.clone()
+                try:
+                    execute_move(s, rot, trans)
+                except InvalidMove:
+                    continue
+                score2, _ = self.scoring_func(s)
+                score2 += self._weights.move_cost * ((1 if rot == 3 else rot) + abs(trans))
+                if score2 > best:
+                    best = score2
+        return best if best > float("-inf") else move.score
+
     def best_move(self, debug=False) -> Tuple[Move, float, int]:
         start = time.time()
+        candidates = self.evaluate_all_moves()
+
+        if self._lookahead and candidates:
+            candidates.sort(key=lambda m: m.score, reverse=True)
+            beam = candidates[: self._beam_width] if self._beam_width else candidates
+            for move in beam:
+                move.score = self._best_lookahead_score(move)
+            candidates = beam
+
         all_moves = sorted(
-            self.evaluate_all_moves(),
+            candidates,
             key=lambda x: (
                 1 if x.lines_completed == 4 else 0,
                 x.score,

@@ -32,15 +32,17 @@ def generate_piece_lists(num_pieces: int, seed: int = 0) -> list[Piece]:
 class GenomeFitness:
     """Picklable fitness callable for genome-level parallel evaluation."""
 
-    def __init__(self, piece_lists, result_key, scoring, bot_model, max_lines=None):
+    def __init__(self, piece_lists, result_key, scoring, bot_model, max_lines=None, lookahead=False, beam_width=None):
         self.piece_lists = piece_lists
         self.result_key = result_key
         self.scoring = scoring
         self.bot_model = bot_model
         self.max_lines = max_lines
+        self.lookahead = lookahead
+        self.beam_width = beam_width
 
     def __call__(self, weights):
-        bot = create_bot(self.bot_model, weights=weights, parallel=False, scoring=self.scoring)
+        bot = create_bot(self.bot_model, weights=weights, parallel=False, scoring=self.scoring, lookahead=self.lookahead, beam_width=self.beam_width)
         results = []
         for piece_list in self.piece_lists:
             result = simulate_game(bot, piece_list, max_lines=self.max_lines)
@@ -79,8 +81,8 @@ def main(args):
 
     max_lines = args.max_lines or None
     fitness_methods = {
-        "score": top_two_thirds_avg_of(piece_lists, "score", args.scoring, args.bot_model, max_lines),
-        "lines": top_two_thirds_avg_of(piece_lists, "lines", args.scoring, args.bot_model, max_lines),
+        "score": top_two_thirds_avg_of(piece_lists, "score", args.scoring, args.bot_model, max_lines, args.lookahead, args.beam_width),
+        "lines": top_two_thirds_avg_of(piece_lists, "lines", args.scoring, args.bot_model, max_lines, args.lookahead, args.beam_width),
     }
     ga = GA(
         args.population,
@@ -96,19 +98,19 @@ def main(args):
     print(best)
 
 
-def create_bot(bot_model: str, weights: Weights = None, parallel: bool = True, scoring: str = "v2"):
+def create_bot(bot_model: str, weights: Weights = None, parallel: bool = True, scoring: str = "v2", lookahead: bool = False, beam_width: int = None):
     if bot_model == "WeightedBot":
         if weights is None:
             weights = Weights()
-        return WeightedBot(weights, parallel=parallel, scoring=scoring)
+        return WeightedBot(weights, parallel=parallel, scoring=scoring, lookahead=lookahead, beam_width=beam_width)
     elif bot_model == "RandomBot":
         return RandomBot("RandomBot")
     else:
         raise ValueError(f"Unknown bot model: {bot_model}")
 
 
-def top_two_thirds_avg_of(piece_lists, result_key, scoring, bot_model, max_lines=None):
-    return GenomeFitness(piece_lists, result_key, scoring, bot_model, max_lines)
+def top_two_thirds_avg_of(piece_lists, result_key, scoring, bot_model, max_lines=None, lookahead=False, beam_width=None):
+    return GenomeFitness(piece_lists, result_key, scoring, bot_model, max_lines, lookahead, beam_width)
 
 
 def simulate_game(bot, piece_list: list[Piece], max_lines: int = None, level: int = 19):
@@ -239,5 +241,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--bot-model", choices=["WeightedBot", "RandomBot"], default="WeightedBot", help="bot model to train"
     )
+    parser.add_argument("--lookahead", action="store_true", default=False, help="evaluate next piece for each candidate move")
+    parser.add_argument("--beam-width", dest="beam_width", type=int, default=None, help="limit lookahead to top-N level-1 candidates (default: all)")
     args = parser.parse_args()
     main(args)
