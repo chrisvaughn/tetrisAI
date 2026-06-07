@@ -19,7 +19,8 @@ def get_bot(bot_model, save_file=None, save_gen=None, lookahead=False, beam_widt
     if bot_model == "Random":
         return RandomBot("RandomBot")
     elif bot_model == "WeightedBotLines":
-        weights = get_weights_from_save("lines", save_file, save_gen)
+        mode = "lines_lookahead" if (lookahead and not save_file) else "lines"
+        weights = get_weights_from_save(mode, save_file, save_gen)
         return WeightedBot(weights, name="WeightedBotLines", lookahead=lookahead, beam_width=beam_width)
     elif bot_model == "WeightedBotScore":
         weights = get_weights_from_save("score", save_file, save_gen)

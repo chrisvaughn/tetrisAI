@@ -30,7 +30,25 @@ score = Weights(
     well_count=-0.37403437412071083,
 )
 
+lines_lookahead = Weights(
+    holes=-0.3984786015311016,
+    depth_weighted_holes=-0.8479660736093779,
+    roughness=-1.2126656149621224,
+    lines=0.5622492704252798,
+    relative_height=0.24421372200072533,
+    absolute_height=-1.4895761696035557,
+    cumulative_height=-0.9712900036038574,
+    well_count=0.8901100779275567,
+    well_cells=-1.4229520928723982,
+    deep_well_count=-1.7900565269031214,
+    total_cells=-1.1580050131963833,
+    total_weighted_cells=-0.002689582719308359,
+    row_transitions=-0.7009772496505169,
+    move_cost=0.1752694877034121,
+)
+
 by_mode = {
     "lines": line_gen9,
+    "lines_lookahead": lines_lookahead,
     "score": score,
 }
