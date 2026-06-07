@@ -48,9 +48,11 @@ class Game:
 
     def run(self) -> int:
         cp = self.state.select_next_piece()
+        np = self.state.select_next_piece()
+        np.set_position(6, 1)
         self.piece_stats[cp.name] += 1
         self.state_lock.acquire()
-        self.state.update(self.state.board, cp)
+        self.state.update(self.state.board, cp, np)
         self.state_lock.release()
         self.piece_count += 1
         time.sleep(1)
@@ -58,7 +60,7 @@ class Game:
             frame_start = time.time()
             self.state_lock.acquire()
             moved_down = self.state.move_down()
-            self.state.update(self.state.board, cp)
+            self.state.update(self.state.board, cp, np)
             self.state_lock.release()
             if not moved_down:
                 self.game_over = self.state.check_game_over()
@@ -72,10 +74,12 @@ class Game:
                         if lines <= len(score_by_number_of_lines_cleared):
                             self.score += score_by_number_of_lines_cleared[lines - 1] * (self.level + 1)
                         self.line_combos[lines] += 1
-                    cp = self.state.select_next_piece()
+                    cp = np
+                    np = self.state.select_next_piece()
+                    np.set_position(6, 1)
                     self.piece_stats[cp.name] += 1
                     self.state_lock.acquire()
-                    self.state.update(self.state.board, cp)
+                    self.state.update(self.state.board, cp, np)
                     self.state_lock.release()
                     self.piece_count += 1
             time.sleep(
@@ -117,5 +121,5 @@ class Game:
 
     def move_seq_complete(self):
         self.state_lock.acquire()
-        self.state.update(self.state.board, self.state.current_piece)
+        self.state.update(self.state.board, self.state.current_piece, self.state.next_piece)
         self.state_lock.release()

@@ -230,7 +230,11 @@ class Evaluator:
         # If game is over or next piece unknown, fall back to the level-1 score.
         if state.next_piece is None or state.check_game_over():
             return move.score
-        state.current_piece = state.next_piece
+        # Normalize next piece to spawn position/rotation regardless of detection source.
+        next_p = state.next_piece.clone()
+        next_p.set_position(6, 1)
+        next_p.current_shape_idx = next_p.default_shape_idx
+        state.current_piece = next_p
         state.next_piece = None
         best = float("-inf")
         piece = state.current_piece.clone()

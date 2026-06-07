@@ -210,7 +210,10 @@ def simulate_game(bot, piece_list: list[Piece], max_lines: int = None, level: in
     first_advance_lines = min(level * 10 + 10, max(100, level * 10 - 50))
 
     cp = state.select_next_piece()
-    state.update(state.board, cp)
+    next_p = state.piece_list[0].clone() if state.piece_list else None
+    if next_p:
+        next_p.set_position(6, 1)
+    state.update(state.board, cp, next_p)
 
     while True:
         if max_lines and lines >= max_lines:
@@ -241,7 +244,10 @@ def simulate_game(bot, piece_list: list[Piece], max_lines: int = None, level: in
 
         state.board = end.board
         cp = state.select_next_piece()
-        state.update(state.board, cp)
+        next_p = state.piece_list[0].clone() if state.piece_list else None
+        if next_p:
+            next_p.set_position(6, 1)
+        state.update(state.board, cp, next_p)
 
     return {"lines": lines, "score": score}
 
