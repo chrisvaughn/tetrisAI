@@ -114,6 +114,8 @@ def main(args):
         seed_weights=seed_weights,
         seeds_per_genome=args.seeds_per_genome,
         seed_noise=args.seed_noise,
+        restart_noise=args.restart_noise,
+        restart_random_count=args.restart_random_count,
     )
     best = ga.run(resume=True)
     print("All Done")
@@ -270,5 +272,7 @@ if __name__ == "__main__":
     parser.add_argument("--seed-builtin", dest="seed_builtin", action="append", choices=["lines", "score"], metavar="{lines,score}", help="seed population from built-in defined weights (repeatable)")
     parser.add_argument("--seeds-per-genome", dest="seeds_per_genome", type=int, default=5, help="variants to generate per seed genome (default: 5)")
     parser.add_argument("--seed-noise", dest="seed_noise", type=float, default=0.3, help="gauss std for seed variation (default: 0.3)")
+    parser.add_argument("--restart-noise", dest="restart_noise", type=float, default=2.0, help="gauss std for restart variants (default: 2.0)")
+    parser.add_argument("--restart-random", dest="restart_random_count", type=int, default=20, help="fresh random genomes injected on each restart (default: 20)")
     args = parser.parse_args()
     main(args)

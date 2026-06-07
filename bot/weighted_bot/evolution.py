@@ -43,6 +43,8 @@ class GA:
         seed_weights: List[Weights] = None,
         seeds_per_genome: int = 5,
         seed_noise: float = 0.3,
+        restart_noise: float = 2.0,
+        restart_random_count: int = 20,
     ):
         self.population_size = population_size
         self.generations = generations
@@ -54,6 +56,8 @@ class GA:
         self._seed_weights = seed_weights or []
         self._seeds_per_genome = seeds_per_genome
         self._seed_noise = seed_noise
+        self._restart_noise = restart_noise
+        self._restart_random_count = restart_random_count
         self.best_per_generation = []
         self.generation_stats = []
         self.restart_generations = []
@@ -135,13 +139,28 @@ class GA:
             return newest == 0
         return (newest - oldest) / abs(oldest) < min_improvement
 
-    def _restart_from_best(self, best_genome: Genome) -> List[Genome]:
-        children = [best_genome]
-        for _ in range(self.population_size - 1):
+    def _restart_from_best(self, best_genomes: List[Genome]) -> List[Genome]:
+        # Keep all elites unchanged.
+        children = list(best_genomes)
+        random_count = min(self._restart_random_count, self.population_size - len(best_genomes))
+        variant_slots = self.population_size - len(best_genomes) - random_count
+        # Distribute variant slots evenly across all seeds so each elite contributes.
+        per_seed = variant_slots // len(best_genomes)
+        remainder = variant_slots % len(best_genomes)
+        for i, seed in enumerate(best_genomes):
+            count = per_seed + (1 if i < remainder else 0)
+            for _ in range(count):
+                child_weights = Weights()
+                for field in child_weights.__dict__.keys():
+                    value = getattr(seed.weights, field) + random.gauss(0, self._restart_noise)
+                    setattr(child_weights, field, value)
+                children.append(Genome(weights=child_weights, id=self.genome_count))
+                self.genome_count += 1
+        # Fresh random genomes to force exploration outside the current plateau.
+        for _ in range(random_count):
             child_weights = Weights()
             for field in child_weights.__dict__.keys():
-                value = getattr(best_genome.weights, field) + random.gauss(0, 1.0)
-                setattr(child_weights, field, value)
+                setattr(child_weights, field, random.uniform(-1, 1))
             children.append(Genome(weights=child_weights, id=self.genome_count))
             self.genome_count += 1
         return children
@@ -196,10 +215,10 @@ class GA:
                 print(best[0])
                 self.best_per_generation.append(best[0])
                 if self._is_stalled(gen):
-                    print(f"Stall detected at generation {gen}, restarting population from best genome")
+                    print(f"Stall detected at generation {gen}, restarting from top {len(best)} genomes (noise={self._restart_noise}, random={self._restart_random_count})")
                     self.restart_generations.append(gen)
                     self._last_restart_gen = gen
-                    genomes = self._restart_from_best(best[0])
+                    genomes = self._restart_from_best(best)
                 else:
                     genomes = self.combine_and_mutate(best)
                 with open(self.save_file, "wb") as f:
