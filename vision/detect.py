@@ -72,11 +72,21 @@ class Detectorist:
         self._next_piece = next_piece
         return next_piece
 
+    def _contiguous_bottom_height(self) -> int:
+        h = 0
+        for row in reversed(self._board.board):
+            if any(row):
+                h += 1
+            else:
+                break
+        return h
+
     def _find_current_piece(self) -> Tuple[Union[np.ndarray, None], int, int]:
         piece_array = np.empty((0, Board.columns), int)
         at_y = -1
+        established_height = self._contiguous_bottom_height()
         for y, row in enumerate(self._board.board):
-            if len(self._board.board) - y <= self._board.height():
+            if len(self._board.board) - y <= established_height:
                 break
             if any(row):
                 if at_y < 0:
