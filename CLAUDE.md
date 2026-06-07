@@ -55,6 +55,9 @@ uv run python run.py --bot-model WeightedBotScore --save-file save_score.pkl --s
 - `--seed <int>`: Set RNG seed for reproducibility
 - `--level <int>`: Starting level (default: 19)
 - `--debug`: Enable detailed debug logging
+- `--lookahead`: Evaluate next piece for each candidate move (uses `lines_lookahead` weights by default)
+- `--beam-width <int>`: Limit lookahead to top-N level-1 candidates (default: all)
+- `--scoring <v1|v2>`: Scoring system version (default: v2)
 
 ### Training Bots
 
@@ -67,10 +70,23 @@ uv run python train.py --fitness lines --population 100 --generations 100
 # Train for score optimization
 uv run python train.py --fitness score --population 100 --generations 50 --save-file custom_save.pkl
 
+# Train with lookahead (slower but stronger)
+uv run python train.py --fitness lines --lookahead --beam-width 10
+
 # Control parallelism
 uv run python train.py --parallel-runners 8
 uv run python train.py --no-parallel  # Disable parallel evaluation
 ```
+
+**Key training flags:**
+
+- `--max-lines <int>`: Stop each eval game after this many lines (default: 230); lower = faster iterations
+- `--num-iterations <int>`: Games per genome for fitness averaging (default: 100)
+- `--fitness-fraction <float>`: Top fraction of games used for fitness score (default: 0.33)
+- `--seed-file <path>`: Seed population from best genome in a save file (repeatable)
+- `--seed-builtin <lines|score>`: Seed population from built-in defined weights (repeatable)
+
+**Auto-resume:** Training automatically resumes from the save file if it already exists — no extra flag needed. The save file defaults to `save_{fitness_method}.pkl`.
 
 ### Testing
 
@@ -162,6 +178,25 @@ All bots inherit from `BaseBot` and implement:
 - Evaluation runs multiple games per genome and averages top 1/3 results
 - Evolution logic in `bot/weighted_bot/evolution.py` with tournament selection, crossover, and mutation
 
+### Recording & Visualization (`tetris/recorder.py`, `visualization/`)
+
+- `tetris/recorder.py`: `GameRecorder` captures per-piece snapshots; `TrainingRecorder` manages recordings across a full GA run
+- `train_with_recording.py`: Drop-in replacement for `train.py` that saves recordings to disk
+- `visualization/replay_viewer.py`: Side-by-side replay viewer for comparing generations
+- `visualize.py`: Entry point for replay visualization
+
+```bash
+# Train with recording
+uv run python train_with_recording.py --fitness lines --population 100 --generations 50
+
+# View recordings after training
+uv run python visualize.py ./recordings --evolution --max-gen 50
+```
+
+### Validation (`validation/`)
+
+`validation/metrics.py`: Utilities for measuring bot performance outside of training.
+
 ### Vision System (`vision/`)
 
 **Detectorist** (`detect.py`):
@@ -236,8 +271,9 @@ Used consistently across training and evaluation for fair comparison.
 1. Create subclass of `BaseBot` in `bot/your_bot/`
 2. Implement required methods: `update_state()`, `get_best_move()`, `evaluate_move()`
 3. Return `BotMove` objects from `get_best_move()`
-4. Add to `run.py` bot selection logic
-5. Test with `python run.py --bot-model YourBot`
+4. Export the class from `bot/__init__.py` (required for `run.py` to import it)
+5. Add to `run.py` bot selection logic in `get_bot()`
+6. Test with `uv run python run.py --bot-model YourBot`
 
 ### Modifying Evaluation Functions
 
@@ -262,7 +298,7 @@ Both use `top_3rd_avg_of()` which runs multiple games and averages top 33% resul
 Enable detailed logging with `--debug` and `--stats`:
 
 ```bash
-python run.py --bot-model WeightedBotLines --stats --debug
+uv run python run.py --bot-model WeightedBotLines --stats --debug
 ```
 
 This shows:
