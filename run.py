@@ -252,8 +252,16 @@ if __name__ == "__main__":
         help="enable debug info to be logged",
     )
     parser.add_argument("--scoring", choices=["v1", "v2"], default="v2")
-    parser.add_argument("--lookahead", action="store_true", default=False, help="evaluate next piece for each candidate move")
-    parser.add_argument("--beam-width", dest="beam_width", type=int, default=None, help="limit lookahead to top-N level-1 candidates (default: all)")
+    parser.add_argument(
+        "--lookahead", action="store_true", default=False, help="evaluate next piece for each candidate move"
+    )
+    parser.add_argument(
+        "--beam-width",
+        dest="beam_width",
+        type=int,
+        default=None,
+        help="limit lookahead to top-N level-1 candidates (default: all)",
+    )
 
     args = parser.parse_args()
     try:

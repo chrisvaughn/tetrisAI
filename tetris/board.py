@@ -1,4 +1,3 @@
-
 import numpy as np
 
 # Pre-computed constants for fixed 10×20 board
@@ -125,7 +124,7 @@ class Board:
         b = self.board
         # Adjacent-column differences (avoid np.diff overhead for binary board)
         transitions = int(np.count_nonzero(b[:, 1:] != b[:, :-1]))
-        transitions += int(Board.rows - b[:, 0].sum())   # left-border empty cells
+        transitions += int(Board.rows - b[:, 0].sum())  # left-border empty cells
         transitions += int(Board.rows - b[:, -1].sum())  # right-border empty cells
         return transitions
 

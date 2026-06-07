@@ -188,7 +188,19 @@ class GA:
             current = 1
             # Write initial snapshot before evaluation so visualizer has something to show.
             with open(self.save_file, "wb") as f:
-                pickle.dump(SaveState(self.best_per_generation, genomes, current, self.command_args, self.piece_lists, self.generation_stats, self.restart_generations, self._last_restart_gen), f)
+                pickle.dump(
+                    SaveState(
+                        self.best_per_generation,
+                        genomes,
+                        current,
+                        self.command_args,
+                        self.piece_lists,
+                        self.generation_stats,
+                        self.restart_generations,
+                        self._last_restart_gen,
+                    ),
+                    f,
+                )
 
         if self.genome_workers > 1:
             try:
@@ -215,14 +227,29 @@ class GA:
                 print(best[0])
                 self.best_per_generation.append(best[0])
                 if self._is_stalled(gen):
-                    print(f"Stall detected at generation {gen}, restarting from top {len(best)} genomes (noise={self._restart_noise}, random={self._restart_random_count})")
+                    print(
+                        f"Stall detected at generation {gen}, restarting from top {len(best)} genomes "
+                        f"(noise={self._restart_noise}, random={self._restart_random_count})"
+                    )
                     self.restart_generations.append(gen)
                     self._last_restart_gen = gen
                     genomes = self._restart_from_best(best)
                 else:
                     genomes = self.combine_and_mutate(best)
                 with open(self.save_file, "wb") as f:
-                    pickle.dump(SaveState(self.best_per_generation, genomes, gen + 1, self.command_args, self.piece_lists, self.generation_stats, self.restart_generations, self._last_restart_gen), f)
+                    pickle.dump(
+                        SaveState(
+                            self.best_per_generation,
+                            genomes,
+                            gen + 1,
+                            self.command_args,
+                            self.piece_lists,
+                            self.generation_stats,
+                            self.restart_generations,
+                            self._last_restart_gen,
+                        ),
+                        f,
+                    )
         finally:
             if self._pool is not None:
                 self._pool.terminate()

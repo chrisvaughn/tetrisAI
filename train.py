@@ -33,7 +33,17 @@ def generate_piece_lists(num_pieces: int, seed: int = 0) -> list[Piece]:
 class GenomeFitness:
     """Picklable fitness callable for genome-level parallel evaluation."""
 
-    def __init__(self, piece_lists, result_key, scoring, bot_model, max_lines=None, lookahead=False, beam_width=None, fitness_fraction=0.33):
+    def __init__(
+        self,
+        piece_lists,
+        result_key,
+        scoring,
+        bot_model,
+        max_lines=None,
+        lookahead=False,
+        beam_width=None,
+        fitness_fraction=0.33,
+    ):
         self.piece_lists = piece_lists
         self.result_key = result_key
         self.scoring = scoring
@@ -44,7 +54,14 @@ class GenomeFitness:
         self.fitness_fraction = fitness_fraction
 
     def __call__(self, weights):
-        bot = create_bot(self.bot_model, weights=weights, parallel=False, scoring=self.scoring, lookahead=self.lookahead, beam_width=self.beam_width)
+        bot = create_bot(
+            self.bot_model,
+            weights=weights,
+            parallel=False,
+            scoring=self.scoring,
+            lookahead=self.lookahead,
+            beam_width=self.beam_width,
+        )
         results = []
         for piece_list in self.piece_lists:
             result = simulate_game(bot, piece_list, max_lines=self.max_lines)
@@ -84,11 +101,11 @@ def main(args):
     max_lines = args.max_lines or None
 
     seed_weights = []
-    for mode in (args.seed_builtin or []):
+    for mode in args.seed_builtin or []:
         if mode in defined_weights_by_mode:
             seed_weights.append(defined_weights_by_mode[mode])
             print(f"Seeding from built-in weights: {mode}")
-    for seed_file in (args.seed_file or []):
+    for seed_file in args.seed_file or []:
         if os.path.isfile(seed_file):
             # Save files are written by this same process — trusted local data only.
             with open(seed_file, "rb") as f:
@@ -97,11 +114,30 @@ def main(args):
             seed_weights.append(best.weights)
             print(f"Seeding from {seed_file}: genome id={best.id} fitness={best.fitness:.4f}")
     if seed_weights:
-        print(f"{len(seed_weights)} seed(s) × {args.seeds_per_genome} variants = {len(seed_weights) * args.seeds_per_genome} seeded genomes")
+        n_seeded = len(seed_weights) * args.seeds_per_genome
+        print(f"{len(seed_weights)} seed(s) × {args.seeds_per_genome} variants = {n_seeded} seeded genomes")
 
     fitness_methods = {
-        "score": top_two_thirds_avg_of(piece_lists, "score", args.scoring, args.bot_model, max_lines, args.lookahead, args.beam_width, args.fitness_fraction),
-        "lines": top_two_thirds_avg_of(piece_lists, "lines", args.scoring, args.bot_model, max_lines, args.lookahead, args.beam_width, args.fitness_fraction),
+        "score": top_two_thirds_avg_of(
+            piece_lists,
+            "score",
+            args.scoring,
+            args.bot_model,
+            max_lines,
+            args.lookahead,
+            args.beam_width,
+            args.fitness_fraction,
+        ),
+        "lines": top_two_thirds_avg_of(
+            piece_lists,
+            "lines",
+            args.scoring,
+            args.bot_model,
+            max_lines,
+            args.lookahead,
+            args.beam_width,
+            args.fitness_fraction,
+        ),
     }
     ga = GA(
         args.population,
@@ -122,7 +158,14 @@ def main(args):
     print(best)
 
 
-def create_bot(bot_model: str, weights: Weights = None, parallel: bool = True, scoring: str = "v2", lookahead: bool = False, beam_width: int = None):
+def create_bot(
+    bot_model: str,
+    weights: Weights = None,
+    parallel: bool = True,
+    scoring: str = "v2",
+    lookahead: bool = False,
+    beam_width: int = None,
+):
     if bot_model == "WeightedBot":
         if weights is None:
             weights = Weights()
@@ -133,8 +176,26 @@ def create_bot(bot_model: str, weights: Weights = None, parallel: bool = True, s
         raise ValueError(f"Unknown bot model: {bot_model}")
 
 
-def top_two_thirds_avg_of(piece_lists, result_key, scoring, bot_model, max_lines=None, lookahead=False, beam_width=None, fitness_fraction=0.33):
-    return GenomeFitness(piece_lists, result_key, scoring, bot_model, max_lines, lookahead, beam_width, fitness_fraction)
+def top_two_thirds_avg_of(
+    piece_lists,
+    result_key,
+    scoring,
+    bot_model,
+    max_lines=None,
+    lookahead=False,
+    beam_width=None,
+    fitness_fraction=0.33,
+):
+    return GenomeFitness(
+        piece_lists,
+        result_key,
+        scoring,
+        bot_model,
+        max_lines,
+        lookahead,
+        beam_width,
+        fitness_fraction,
+    )
 
 
 def simulate_game(bot, piece_list: list[Piece], max_lines: int = None, level: int = 19):
@@ -265,14 +326,65 @@ if __name__ == "__main__":
     parser.add_argument(
         "--bot-model", choices=["WeightedBot", "RandomBot"], default="WeightedBot", help="bot model to train"
     )
-    parser.add_argument("--lookahead", action="store_true", default=False, help="evaluate next piece for each candidate move")
-    parser.add_argument("--beam-width", dest="beam_width", type=int, default=None, help="limit lookahead to top-N level-1 candidates (default: all)")
-    parser.add_argument("--fitness-fraction", dest="fitness_fraction", type=float, default=0.33, help="top fraction of games used for fitness (default: 0.33)")
-    parser.add_argument("--seed-file", dest="seed_file", action="append", metavar="PATH", help="seed population from best genome in save file (repeatable)")
-    parser.add_argument("--seed-builtin", dest="seed_builtin", action="append", choices=["lines", "score"], metavar="{lines,score}", help="seed population from built-in defined weights (repeatable)")
-    parser.add_argument("--seeds-per-genome", dest="seeds_per_genome", type=int, default=5, help="variants to generate per seed genome (default: 5)")
-    parser.add_argument("--seed-noise", dest="seed_noise", type=float, default=0.3, help="gauss std for seed variation (default: 0.3)")
-    parser.add_argument("--restart-noise", dest="restart_noise", type=float, default=2.0, help="gauss std for restart variants (default: 2.0)")
-    parser.add_argument("--restart-random", dest="restart_random_count", type=int, default=20, help="fresh random genomes injected on each restart (default: 20)")
+    parser.add_argument(
+        "--lookahead", action="store_true", default=False, help="evaluate next piece for each candidate move"
+    )
+    parser.add_argument(
+        "--beam-width",
+        dest="beam_width",
+        type=int,
+        default=None,
+        help="limit lookahead to top-N level-1 candidates (default: all)",
+    )
+    parser.add_argument(
+        "--fitness-fraction",
+        dest="fitness_fraction",
+        type=float,
+        default=0.33,
+        help="top fraction of games used for fitness (default: 0.33)",
+    )
+    parser.add_argument(
+        "--seed-file",
+        dest="seed_file",
+        action="append",
+        metavar="PATH",
+        help="seed population from best genome in save file (repeatable)",
+    )
+    parser.add_argument(
+        "--seed-builtin",
+        dest="seed_builtin",
+        action="append",
+        choices=["lines", "score"],
+        metavar="{lines,score}",
+        help="seed population from built-in defined weights (repeatable)",
+    )
+    parser.add_argument(
+        "--seeds-per-genome",
+        dest="seeds_per_genome",
+        type=int,
+        default=5,
+        help="variants to generate per seed genome (default: 5)",
+    )
+    parser.add_argument(
+        "--seed-noise",
+        dest="seed_noise",
+        type=float,
+        default=0.3,
+        help="gauss std for seed variation (default: 0.3)",
+    )
+    parser.add_argument(
+        "--restart-noise",
+        dest="restart_noise",
+        type=float,
+        default=2.0,
+        help="gauss std for restart variants (default: 2.0)",
+    )
+    parser.add_argument(
+        "--restart-random",
+        dest="restart_random_count",
+        type=int,
+        default=20,
+        help="fresh random genomes injected on each restart (default: 20)",
+    )
     args = parser.parse_args()
     main(args)

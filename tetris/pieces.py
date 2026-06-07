@@ -107,7 +107,7 @@ class Piece:
 
     def cell_tuples_for_rotation(self, idx: int):
         """Cached list of (row, col) int tuples for an arbitrary rotation index."""
-        key = (idx, 't')
+        key = (idx, "t")
         if key not in self._cells_cache:
             ys, xs = np.nonzero(self.shapes[idx])
             self._cells_cache[key] = list(zip(ys.tolist(), xs.tolist()))

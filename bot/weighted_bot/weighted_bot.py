@@ -34,7 +34,9 @@ class WeightedBot(BaseBot):
         """Update the bot's knowledge of the current game state"""
         super().update_state(state)
         if self._evaluator is None:
-            self._evaluator = Evaluator(state, self.weights, self.parallel, self.scoring, self.lookahead, self.beam_width)
+            self._evaluator = Evaluator(
+                state, self.weights, self.parallel, self.scoring, self.lookahead, self.beam_width
+            )
         else:
             self._evaluator.update_state(state)
 
@@ -42,7 +44,9 @@ class WeightedBot(BaseBot):
         """Update the bot's state from detected board and piece information"""
         super().update_from_detection(board, current_piece, next_piece)
         if self._evaluator is None:
-            self._evaluator = Evaluator(self._current_state, self.weights, self.parallel, self.scoring, self.lookahead, self.beam_width)
+            self._evaluator = Evaluator(
+                self._current_state, self.weights, self.parallel, self.scoring, self.lookahead, self.beam_width
+            )
         else:
             self._evaluator.update_state(self._current_state)
 

@@ -87,15 +87,16 @@ uv run pytest --cov=tetris --cov=bot
 
 ### Code Formatting
 
+**After every code change, run:**
+
 ```bash
-# Format code and sort imports
-uv run ruff format .
+uv run ruff check --fix . && uv run ruff format .
+```
 
-# Lint and auto-fix
-uv run ruff check --fix .
+Then verify it's clean (same check CI runs):
 
-# Run both (common workflow)
-uv run ruff check --fix . && ruff format .
+```bash
+uv run ruff check . && uv run ruff format . --check
 ```
 
 ## Architecture

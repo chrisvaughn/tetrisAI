@@ -1,6 +1,6 @@
 from .defined_weights import by_mode
 from .evaluate import Evaluator, Weights
-from .evaluation_pool import _evaluate_genome, _genome_worker_init, get_pool, shutdown_pool
+from .evaluation_pool import get_pool, shutdown_pool
 from .evolution import GA, Genome
 from .weighted_bot import WeightedBot
 

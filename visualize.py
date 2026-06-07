@@ -9,6 +9,7 @@ Usage:
 
 Press 'q' to quit. The display auto-reloads when the save file changes.
 """
+
 import argparse
 import math
 import os
@@ -43,6 +44,7 @@ BOT_STAGGER_S = 0.2  # stagger startup so bots don't all evaluate their first mo
 def screen_size():
     try:
         import Quartz
+
         b = Quartz.CGDisplayBounds(Quartz.CGMainDisplayID())
         return int(b.size.width), int(b.size.height)
     except Exception:
@@ -184,7 +186,7 @@ def make_canvas(bots, cols, cell, generation_stats):
         row, col = divmod(i, cols)
         img = render_slot(board, score, lines, bot.rank, bot.genome.fitness, games, bot.genome.id, bot.gen_label, cell)
         r0, c0 = row * slot_h, col * slot_w
-        canvas[r0:r0 + HEADER_H + bh, c0:c0 + bw] = img
+        canvas[r0 : r0 + HEADER_H + bh, c0 : c0 + bw] = img
 
     if generation_stats:
         last = generation_stats[-1]
@@ -197,22 +199,28 @@ def make_canvas(bots, cols, cell, generation_stats):
 
 def make_stats_canvas(generation_stats, width, height):
     canvas = np.zeros((height, width, 3), dtype=np.uint8)
-    cv2.putText(canvas, "1:Games  2:Stats  Q:Quit", (5, height - 8),
-                cv2.FONT_HERSHEY_PLAIN, 1.0, COLOR_BORDER, 1)
+    cv2.putText(canvas, "1:Games  2:Stats  Q:Quit", (5, height - 8), cv2.FONT_HERSHEY_PLAIN, 1.0, COLOR_BORDER, 1)
 
     if not generation_stats:
-        cv2.putText(canvas, "Waiting for first generation...", (width // 2 - 130, height // 2),
-                    cv2.FONT_HERSHEY_PLAIN, 1.5, COLOR_TEXT, 1)
+        cv2.putText(
+            canvas,
+            "Waiting for first generation...",
+            (width // 2 - 130, height // 2),
+            cv2.FONT_HERSHEY_PLAIN,
+            1.5,
+            COLOR_TEXT,
+            1,
+        )
         return canvas
 
     ml, mr, mt, mb = 65, 30, 50, 45
     pw = width - ml - mr
     ph = height - mt - mb
 
-    gens  = [s["gen"]  for s in generation_stats]
+    gens = [s["gen"] for s in generation_stats]
     bests = [s["best"] for s in generation_stats]
     means = [s["mean"] for s in generation_stats]
-    stds  = [s["std"]  for s in generation_stats]
+    stds = [s["std"] for s in generation_stats]
 
     g0, g1 = gens[0], gens[-1]
     v0, v1 = 0, max(max(bests), 10) * 1.08
@@ -246,7 +254,7 @@ def make_stats_canvas(generation_stats, width, height):
     # Std deviation shaded band
     if len(gens) > 1:
         pts_hi = [px(g, min(v1, m + s)) for g, m, s in zip(gens, means, stds)]
-        pts_lo = [px(g, max(0,   m - s)) for g, m, s in zip(gens, means, stds)]
+        pts_lo = [px(g, max(0, m - s)) for g, m, s in zip(gens, means, stds)]
         poly = np.array(pts_hi + pts_lo[::-1], dtype=np.int32)
         overlay = canvas.copy()
         cv2.fillPoly(overlay, [poly], COLOR_STD_BAND)
@@ -254,11 +262,11 @@ def make_stats_canvas(generation_stats, width, height):
 
     # Mean line
     for i in range(1, len(gens)):
-        cv2.line(canvas, px(gens[i-1], means[i-1]), px(gens[i], means[i]), COLOR_MEAN_LINE, 1)
+        cv2.line(canvas, px(gens[i - 1], means[i - 1]), px(gens[i], means[i]), COLOR_MEAN_LINE, 1)
 
     # Best line (thicker)
     for i in range(1, len(gens)):
-        cv2.line(canvas, px(gens[i-1], bests[i-1]), px(gens[i], bests[i]), COLOR_BEST_LINE, 2)
+        cv2.line(canvas, px(gens[i - 1], bests[i - 1]), px(gens[i], bests[i]), COLOR_BEST_LINE, 2)
 
     # Legend
     lx, ly = ml + 12, mt + 16
@@ -271,7 +279,10 @@ def make_stats_canvas(generation_stats, width, height):
 
     # Title
     last = generation_stats[-1]
-    title = f"Training Progress — Gen {last['gen']}   best:{last['best']:.1f}   mean:{last['mean']:.1f}   std:{last['std']:.1f}"
+    title = (
+        f"Training Progress — Gen {last['gen']}   best:{last['best']:.1f}"
+        f"   mean:{last['mean']:.1f}   std:{last['std']:.1f}"
+    )
     cv2.putText(canvas, title, (ml, mt - 14), cv2.FONT_HERSHEY_PLAIN, 1.1, COLOR_STATUS, 1)
 
     return canvas
@@ -295,13 +306,12 @@ def stop_bots(bots):
 def main():
     parser = argparse.ArgumentParser(description="Visualize top training genomes as live games")
     parser.add_argument("--save-file", default="save_lines.pkl")
-    parser.add_argument("--count", type=int, default=16,
-                        help="number of bots to show (default 16)")
+    parser.add_argument("--count", type=int, default=16, help="number of bots to show (default 16)")
     parser.add_argument("--fps", type=int, default=10)
     args = parser.parse_args()
 
     cols, rows, cell = best_layout(args.count)
-    print(f"Layout: {cols}x{rows} grid, cell={cell}px, board={10*cell}x{20*cell}px")
+    print(f"Layout: {cols}x{rows} grid, cell={cell}px, board={10 * cell}x{20 * cell}px")
 
     if not os.path.isfile(args.save_file):
         print(f"Save file not found: {args.save_file}")

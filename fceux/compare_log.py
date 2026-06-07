@@ -33,38 +33,38 @@ from tetris.pieces import Tetrominoes
 # Key: NES orientation ID (0-18)
 # Value: list of (dx, dy) cell offsets from the piece pivot stored in $0060/$0061
 ORIENT_OFFSETS: dict[int, list[tuple[int, int]]] = {
-    0:  [(-1, 0), ( 0, 0), ( 1, 0), ( 0,-1)],   # T up
-    1:  [( 0,-1), ( 0, 0), ( 1, 0), ( 0, 1)],   # T right
-    2:  [(-1, 0), ( 0, 0), ( 1, 0), ( 0, 1)],   # T down  (spawn)
-    3:  [( 0,-1), (-1, 0), ( 0, 0), ( 0, 1)],   # T left
-    4:  [( 0,-1), ( 0, 0), (-1, 1), ( 0, 1)],   # J left
-    5:  [(-1,-1), (-1, 0), ( 0, 0), ( 1, 0)],   # J up
-    6:  [( 0,-1), ( 1,-1), ( 0, 0), ( 0, 1)],   # J right
-    7:  [(-1, 0), ( 0, 0), ( 1, 0), ( 1, 1)],   # J down  (spawn)
-    8:  [(-1, 0), ( 0, 0), ( 0, 1), ( 1, 1)],   # Z horizontal (spawn)
-    9:  [( 1,-1), ( 0, 0), ( 1, 0), ( 0, 1)],   # Z vertical
-    10: [(-1, 0), ( 0, 0), (-1, 1), ( 0, 1)],   # O        (spawn, only orientation)
-    11: [( 0, 0), ( 1, 0), (-1, 1), ( 0, 1)],   # S horizontal (spawn)
-    12: [( 0,-1), ( 0, 0), ( 1, 0), ( 1, 1)],   # S vertical
-    13: [( 0,-1), ( 0, 0), ( 0, 1), ( 1, 1)],   # L right
-    14: [(-1, 0), ( 0, 0), ( 1, 0), (-1, 1)],   # L down  (spawn)
-    15: [(-1,-1), ( 0,-1), ( 0, 0), ( 0, 1)],   # L left
-    16: [( 1,-1), (-1, 0), ( 0, 0), ( 1, 0)],   # L up
-    17: [( 0,-2), ( 0,-1), ( 0, 0), ( 0, 1)],   # I vertical
-    18: [(-2, 0), (-1, 0), ( 0, 0), ( 1, 0)],   # I horizontal (spawn)
+    0: [(-1, 0), (0, 0), (1, 0), (0, -1)],  # T up
+    1: [(0, -1), (0, 0), (1, 0), (0, 1)],  # T right
+    2: [(-1, 0), (0, 0), (1, 0), (0, 1)],  # T down  (spawn)
+    3: [(0, -1), (-1, 0), (0, 0), (0, 1)],  # T left
+    4: [(0, -1), (0, 0), (-1, 1), (0, 1)],  # J left
+    5: [(-1, -1), (-1, 0), (0, 0), (1, 0)],  # J up
+    6: [(0, -1), (1, -1), (0, 0), (0, 1)],  # J right
+    7: [(-1, 0), (0, 0), (1, 0), (1, 1)],  # J down  (spawn)
+    8: [(-1, 0), (0, 0), (0, 1), (1, 1)],  # Z horizontal (spawn)
+    9: [(1, -1), (0, 0), (1, 0), (0, 1)],  # Z vertical
+    10: [(-1, 0), (0, 0), (-1, 1), (0, 1)],  # O        (spawn, only orientation)
+    11: [(0, 0), (1, 0), (-1, 1), (0, 1)],  # S horizontal (spawn)
+    12: [(0, -1), (0, 0), (1, 0), (1, 1)],  # S vertical
+    13: [(0, -1), (0, 0), (0, 1), (1, 1)],  # L right
+    14: [(-1, 0), (0, 0), (1, 0), (-1, 1)],  # L down  (spawn)
+    15: [(-1, -1), (0, -1), (0, 0), (0, 1)],  # L left
+    16: [(1, -1), (-1, 0), (0, 0), (1, 0)],  # L up
+    17: [(0, -2), (0, -1), (0, 0), (0, 1)],  # I vertical
+    18: [(-2, 0), (-1, 0), (0, 0), (1, 0)],  # I horizontal (spawn)
     # 19 (0x13) = "second vertical" I-piece state (same offsets as ID 17).
     # NES uses this sentinel ID after rotating I through horizontal→vertical→horizontal.
     # Board capture is unreliable for this ID: $00BF sometimes fires before the
     # line-clear row-shift animation completes, leaving $0400 in a mid-clear state.
-    19: [( 0,-2), ( 0,-1), ( 0, 0), ( 0, 1)],   # I vertical (alt, same as 17)
+    19: [(0, -2), (0, -1), (0, 0), (0, 1)],  # I vertical (alt, same as 17)
 }
 
 # NES orientation ID → NES piece type (0-6)
 ORIENT_TO_NES_TYPE = {
-    **{k: 0 for k in range(0, 4)},    # T
-    **{k: 1 for k in range(4, 8)},    # J
-    **{k: 2 for k in range(8, 10)},   # Z
-    10: 3,                              # O
+    **{k: 0 for k in range(0, 4)},  # T
+    **{k: 1 for k in range(4, 8)},  # J
+    **{k: 2 for k in range(8, 10)},  # Z
+    10: 3,  # O
     **{k: 4 for k in range(11, 13)},  # S
     **{k: 5 for k in range(13, 17)},  # L
     **{k: 6 for k in range(17, 19)},  # I
@@ -78,6 +78,7 @@ PIECE_NAMES = {v: Tetrominoes[v].name for v in range(len(Tetrominoes))}
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────
+
 
 def board_from_str(s: str) -> np.ndarray:
     return np.array([int(c) for c in s], dtype=int).reshape(Board.rows, Board.columns)
@@ -110,7 +111,7 @@ def place_and_clear(board: np.ndarray, orient_id: int, px: int, py: int) -> tupl
 def print_board_diff(python_board: np.ndarray, nes_board: np.ndarray):
     print("    col: 0123456789    col: 0123456789")
     for r in range(Board.rows):
-        py_row  = "".join(str(v) for v in python_board[r])
+        py_row = "".join(str(v) for v in python_board[r])
         nes_row = "".join(str(v) for v in nes_board[r])
         marker = " <--" if py_row != nes_row else ""
         print(f"    r{r:02d}: {py_row}    r{r:02d}: {nes_row}{marker}")
@@ -131,6 +132,7 @@ def parse_log(path: str) -> list[dict]:
 
 # ── Section 1: Piece sequence ───────────────────────────────────────────────
 
+
 def analyze_piece_sequence(events: list[dict]):
     print("=" * 70)
     print("SECTION 1: Piece sequence")
@@ -138,22 +140,28 @@ def analyze_piece_sequence(events: list[dict]):
     print(f"Total pieces logged: {len(events)}")
     print()
 
-    print(f"{'i':>4}  {'oid':>3}  {'oa':>3}  {'ob':>3}  {'type':>5}  {'name':>5}  {'x':>3}  {'y':>3}  {'prng':>6}  {'lines':>5}")
+    print(
+        f"{'i':>4}  {'oid':>3}  {'oa':>3}  {'ob':>3}  {'type':>5}  "
+        f"{'name':>5}  {'x':>3}  {'y':>3}  {'prng':>6}  {'lines':>5}"
+    )
     print("-" * 65)
     for e in events[:30]:
         oid = e["piece_id"]
-        oa  = e.get("orient_a", oid)
-        ob  = e.get("orient_b", oid)
+        oa = e.get("orient_a", oid)
+        ob = e.get("orient_b", oid)
         nes_type = ORIENT_TO_NES_TYPE.get(oid, -1)
         py_idx = NES_TYPE_TO_PYTHON.get(nes_type, -1)
         name = Tetrominoes[py_idx].name if py_idx >= 0 else "?"
         flag = " !" if oa != ob else ""
-        print(f"  {e['i']:>4}  {oid:>3}  {oa:>3}  {ob:>3}  {nes_type:>5}  {name:>5}  "
-              f"{e['x']:>3}  {e['y']:>3}  0x{e['prng']:04X}  {e['lines']:>5}{flag}")
+        print(
+            f"  {e['i']:>4}  {oid:>3}  {oa:>3}  {ob:>3}  {nes_type:>5}  {name:>5}  "
+            f"{e['x']:>3}  {e['y']:>3}  0x{e['prng']:04X}  {e['lines']:>5}{flag}"
+        )
     print()
 
 
 # ── Section 2: Board replay ─────────────────────────────────────────────────
+
 
 def replay_boards(events: list[dict]):
     print()
@@ -184,8 +192,8 @@ def replay_boards(events: list[dict]):
         try:
             got, n_cleared = place_and_clear(prev_board, oid, px, py)
         except ValueError as e:
-            print(f"  Piece {ev['i']:3d} (orient={oid} {PIECE_NAMES.get(NES_TYPE_TO_PYTHON.get(ORIENT_TO_NES_TYPE.get(oid,-1),-1),'?')} "
-                  f"x={px} y={py}): ERROR — {e}")
+            piece_name = PIECE_NAMES.get(NES_TYPE_TO_PYTHON.get(ORIENT_TO_NES_TYPE.get(oid, -1), -1), "?")
+            print(f"  Piece {ev['i']:3d} (orient={oid} {piece_name} x={px} y={py}): ERROR — {e}")
             mismatches += 1
             continue
 
@@ -194,22 +202,22 @@ def replay_boards(events: list[dict]):
             if i < 15:
                 nes_type = ORIENT_TO_NES_TYPE.get(oid, -1)
                 name = PIECE_NAMES.get(NES_TYPE_TO_PYTHON.get(nes_type, -1), "?")
-                print(f"  Piece {ev['i']:3d} (orient={oid:2d} {name:1s}  x={px} y={py}  "
-                      f"cleared={n_cleared}): MATCH")
+                print(f"  Piece {ev['i']:3d} (orient={oid:2d} {name:1s}  x={px} y={py}  cleared={n_cleared}): MATCH")
         else:
             mismatches += 1
             diff_cells = int((got != expected).sum())
             nes_type = ORIENT_TO_NES_TYPE.get(oid, -1)
             name = PIECE_NAMES.get(NES_TYPE_TO_PYTHON.get(nes_type, -1), "?")
-            print(f"  Piece {ev['i']:3d} (orient={oid:2d} {name:1s}  x={px} y={py}  "
-                  f"cleared={n_cleared}): MISMATCH — {diff_cells} cells differ")
+            print(
+                f"  Piece {ev['i']:3d} (orient={oid:2d} {name:1s}  x={px} y={py}  "
+                f"cleared={n_cleared}): MISMATCH — {diff_cells} cells differ"
+            )
             if mismatches <= 3:
                 print("  Python result (left) vs NES expected (right):")
                 print_board_diff(got, expected)
 
     print()
-    print(f"Results: {matches} match, {mismatches} mismatch, {skipped} skipped "
-          f"(sentinel) out of {len(events)} pieces")
+    print(f"Results: {matches} match, {mismatches} mismatch, {skipped} skipped (sentinel) out of {len(events)} pieces")
     if mismatches > 0:
         print()
         print("Diagnosis guide:")
@@ -220,6 +228,7 @@ def replay_boards(events: list[dict]):
 
 
 # ── Main ────────────────────────────────────────────────────────────────────
+
 
 def main():
     if len(sys.argv) < 2:
