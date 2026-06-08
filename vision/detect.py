@@ -6,9 +6,23 @@ from tetris import Board, Piece, Tetrominoes
 
 pixel_threshold_black = 40
 
+# (y_start, y_end, x_start, x_end) pixel regions within the 256x240 capture
+NESTOPIA_OFFSETS = {
+    "board": (47, 209, 95, 176),
+    "next_piece": (111, 143, 191, 223),
+}
+FCEUX_OFFSETS = {
+    "board": (55, 217, 95, 176),
+    "next_piece": (119, 151, 191, 223),
+}
+
 
 class Detectorist:
-    def __init__(self):
+    def __init__(self, offsets: dict = None):
+        if offsets is None:
+            offsets = NESTOPIA_OFFSETS
+        self._board_region: Tuple[int, int, int, int] = offsets["board"]
+        self._next_piece_region: Tuple[int, int, int, int] = offsets["next_piece"]
         self.image: Union[np.ndarray, None] = None
         self._board: Union[Board, None] = None
         self._current_piece: Union[Piece, None] = None
@@ -42,8 +56,8 @@ class Detectorist:
     def _detect_board(self):
         if self.image is None:
             raise Exception("image shouldn't be None")
-        board_image = self.image[47:209, 95:176]
-        # cv2.imshow("Board Image", board_image)
+        by0, by1, bx0, bx1 = self._board_region
+        board_image = self.image[by0:by1, bx0:bx1]
         board = _scan_image(20, 10, board_image)
         self._board = Board(board)
 
@@ -61,7 +75,8 @@ class Detectorist:
     def detect_next_piece(self):
         if self.image is None:
             raise Exception("image shouldn't be None")
-        next_piece_image = self.image[111:143, 191:223]
+        ny0, ny1, nx0, nx1 = self._next_piece_region
+        next_piece_image = self.image[ny0:ny1, nx0:nx1]
         next_piece_arr = _scan_image(4, 4, next_piece_image)
         next_piece_arr, _ = _prune_piece_array(next_piece_arr)
         next_piece = None

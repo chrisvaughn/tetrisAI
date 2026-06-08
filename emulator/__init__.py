@@ -6,6 +6,7 @@ import applescript
 import cv2
 
 from emulator.capture import CaptureController
+from emulator.fceux import FCEUXEmulator as FCEUXEmulator
 from emulator.keyboard import Keyboard
 
 EMULATOR_NAME = "Nestopia"

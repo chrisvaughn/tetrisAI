@@ -1,6 +1,5 @@
 import time
 from dataclasses import dataclass
-from itertools import zip_longest
 from typing import List, Tuple, Union
 
 from tetris import MS_PER_FRAME, MS_PER_KEYPRESS, GameState, InvalidMove
@@ -51,7 +50,7 @@ class Move:
         if self.translation > 0:
             for _ in range(abs(self.translation)):
                 translations.append("move_right")
-        seq = list(zip_longest(rotations, translations, fillvalue="noop"))
+        seq = [(r,) for r in rotations] + [(t,) for t in translations]
         if not seq:
             seq.append(("noop",))
         return seq

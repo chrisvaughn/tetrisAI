@@ -11,20 +11,24 @@ import cv2
 
 from bot import RandomBot, WeightedBot, by_mode, get_pool, shutdown_pool
 from tetris import Game, GameState, Tetrominoes, frames_per_cell_by_level
-from vision import Detectorist
+from vision import FCEUX_OFFSETS, NESTOPIA_OFFSETS, Detectorist
 
 
-def get_bot(bot_model, save_file=None, save_gen=None, lookahead=False, beam_width=None):
+def get_bot(bot_model, save_file=None, save_gen=None, lookahead=False, beam_width=None, scoring="v2"):
     """Create a bot instance based on the bot-model argument"""
     if bot_model == "Random":
         return RandomBot("RandomBot")
     elif bot_model == "WeightedBotLines":
         mode = "lines_lookahead" if (lookahead and not save_file) else "lines"
         weights = get_weights_from_save(mode, save_file, save_gen)
-        return WeightedBot(weights, name="WeightedBotLines", lookahead=lookahead, beam_width=beam_width)
+        return WeightedBot(
+            weights, name="WeightedBotLines", lookahead=lookahead, beam_width=beam_width, scoring=scoring
+        )
     elif bot_model == "WeightedBotScore":
         weights = get_weights_from_save("score", save_file, save_gen)
-        return WeightedBot(weights, name="WeightedBotScore", lookahead=lookahead, beam_width=beam_width)
+        return WeightedBot(
+            weights, name="WeightedBotScore", lookahead=lookahead, beam_width=beam_width, scoring=scoring
+        )
     else:
         raise ValueError(f"Unknown bot model: {bot_model}")
 
@@ -57,7 +61,7 @@ def print_final_stats(lines: int, piece_stats: Counter, combos: Counter):
 def main(args):
     # init evaluation pool
     get_pool()
-    bot = get_bot(args.bot_model, args.save_file, args.save_gen, args.lookahead, args.beam_width)
+    bot = get_bot(args.bot_model, args.save_file, args.save_gen, args.lookahead, args.beam_width, args.scoring)
     print(f"Using bot: {bot.name}")
     print(f"Bot stats: {bot.get_stats()}")
     if args.emulator:
@@ -107,9 +111,14 @@ def run_in_memory(args, bot):
 
 
 def run_with_emulator(args, bot):
-    from emulator import Emulator
+    if args.emulator_type == "fceux":
+        from emulator import FCEUXEmulator
 
-    emulator = Emulator(args.limit_speed, args.music, args.level, args.sound)
+        emulator = FCEUXEmulator(args.music, args.level, args.sound, args.manual_start)
+    else:
+        from emulator import Emulator
+
+        emulator = Emulator(args.limit_speed, args.music, args.level, args.sound)
     try:
         _run_with_emulator(args, bot, emulator)
     finally:
@@ -126,11 +135,13 @@ def _run_with_emulator(args, bot, emulator):
 
     gs = GameState(args.seed)
     gs.frames_per_cell = frames_per_cell_by_level.get(args.level, 2)
-    detector = Detectorist()
+    offsets = FCEUX_OFFSETS if args.emulator_type == "fceux" else NESTOPIA_OFFSETS
+    detector = Detectorist(offsets)
 
     expected_state: Union[GameState, None] = None
     move_sequence_executed = False
     next_best_move, next_time_taken, next_moves_considered = None, None, None
+    _diag_frame = 0
     while True:
         screen = emulator.get_latest_image()
         if screen is None:
@@ -139,6 +150,12 @@ def _run_with_emulator(args, bot, emulator):
         detector.update(screen)
         if detector.board.game_over():
             break
+
+        if args.debug:
+            _diag_frame += 1
+            if _diag_frame % 30 == 1:
+                piece_name = detector.current_piece.name if detector.current_piece else "None"
+                print(f"[diag] frame={_diag_frame} current_piece={piece_name} gs.current_piece={gs.current_piece}")
 
         gs.update(detector.board, detector.current_piece, detector.next_piece)
         if gs.new_piece():
@@ -207,6 +224,20 @@ def _run_with_emulator(args, bot, emulator):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="run tetris bot")
     parser.add_argument("--emulator", action="store_true", default=False, help="run with emulator")
+    parser.add_argument(
+        "--emulator-type",
+        dest="emulator_type",
+        choices=["nestopia", "fceux"],
+        default="nestopia",
+        help="emulator backend (default: nestopia)",
+    )
+    parser.add_argument(
+        "--manual-start",
+        dest="manual_start",
+        action="store_true",
+        default=False,
+        help="skip automated menu navigation; start the game yourself then press Enter",
+    )
     parser.add_argument("--stats", action="store_true", default=False, help="print move stats display")
     parser.add_argument(
         "--seed",

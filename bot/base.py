@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from itertools import zip_longest
 from typing import List, Optional, Tuple
 
 from tetris import Board, GameState, Piece
@@ -40,7 +39,7 @@ class BotMove:
             for _ in range(abs(self.translation)):
                 translations.append("move_right")
 
-        seq = list(zip_longest(rotations, translations, fillvalue="noop"))
+        seq = [(r,) for r in rotations] + [(t,) for t in translations]
         if not seq:
             seq.append(("noop",))
         return seq
