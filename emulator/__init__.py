@@ -169,7 +169,6 @@ class Emulator:
         # self.keyboard.keylog.output()
 
     def get_latest_image(self):
-        if self.capturer.has_new_image:
+        if self.capturer.has_new_image():
             return self.capturer.latest_image()
-        else:
-            return None
+        return None

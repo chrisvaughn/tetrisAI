@@ -18,9 +18,6 @@ HOLD_FRAMES = 1
 GAP_FRAMES = 1
 ACK_TIMEOUT = 5.0
 
-# A mean pixel difference above this threshold counts as a screen change
-SCREEN_CHANGE_THRESHOLD = 5.0
-
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
 
@@ -89,9 +86,7 @@ class FCEUXEmulator:
 
     def send_multiple_moves(self, moves: list[str]):
         buttons = [self._move_to_button[m] for m in moves if m in self._move_to_button]
-        if len(buttons) > 1:
-            self._press(buttons)
-        elif len(buttons) == 1:
+        if buttons:
             self._press(buttons)
 
     def drop_on(self):
@@ -147,6 +142,9 @@ class FCEUXEmulator:
         best = 0.0
         while time.time() < deadline:
             screen = self.capturer.latest_image()
+            if screen is None:
+                time.sleep(0.05)
+                continue
             res = cv2.matchTemplate(screen, tmpl, cv2.TM_CCOEFF_NORMED)
             _, max_val, _, _ = cv2.minMaxLoc(res)
             best = max(best, max_val)
@@ -222,8 +220,8 @@ class FCEUXEmulator:
             input()
             return process
 
-        # Wait for FCEUX to start and Lua bridge to initialise
-        time.sleep(5)
+        # Brief wait for FCEUX window to appear before template polling starts
+        time.sleep(1)
 
         self._wait_for_template("title_screen")
 

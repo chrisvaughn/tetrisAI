@@ -1,6 +1,7 @@
 import signal
 import time
 from multiprocessing import Process, Queue, shared_memory
+from queue import Empty
 
 import cv2
 import numpy as np
@@ -64,8 +65,11 @@ class CaptureController:
     def has_new_image(self):
         return not self.queue.empty()
 
-    def latest_image(self):
-        self.queue.get()
+    def latest_image(self, timeout: float = 2.0):
+        try:
+            self.queue.get(timeout=timeout)
+        except Empty:
+            return None
         return np.ndarray(shape, dtype=dtype, buffer=self.shm.buf)
 
 
