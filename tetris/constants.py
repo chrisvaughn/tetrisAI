@@ -36,6 +36,10 @@ frames_per_cell_by_level = {
     29: 1,
 }
 
-# Time cost per keypress for the macOS keyboard→emulator path:
+# Time cost per keypress for the macOS keyboard→emulator path (Nestopia):
 # 20ms hold + 24ms min gap between presses = 44ms per move
 MS_PER_KEYPRESS = 44.0
+
+# Time cost per keypress for the FCEUX file-based IPC path:
+# Lua bridge takes 3 NES frames per press (read + hold + gap) = 3 × 16.67ms ≈ 50ms
+MS_PER_KEYPRESS_FCEUX = 50.0

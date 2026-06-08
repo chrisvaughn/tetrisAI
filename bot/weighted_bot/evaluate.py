@@ -2,7 +2,7 @@ import time
 from dataclasses import dataclass
 from typing import List, Tuple, Union
 
-from tetris import MS_PER_FRAME, MS_PER_KEYPRESS, GameState, InvalidMove
+from tetris import MS_PER_FRAME, GameState, InvalidMove
 
 from .evaluation_pool import get_pool
 
@@ -63,7 +63,7 @@ def execute_move(state: GameState, rot: int, trans: int):
         effective_rotations = 1 if rot == 3 else rot
         keypresses = effective_rotations + abs(trans)
         ms_per_row = state.frames_per_cell * MS_PER_FRAME
-        rows_to_drop = int(keypresses * MS_PER_KEYPRESS / ms_per_row)
+        rows_to_drop = int(keypresses * state.ms_per_keypress / ms_per_row)
         for _ in range(rows_to_drop):
             if not state.move_down_possible():
                 break

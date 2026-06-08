@@ -5,6 +5,7 @@ import cv2
 import numpy as np
 
 from .board import Board
+from .constants import MS_PER_KEYPRESS
 from .pieces import Piece, Tetrominoes
 
 
@@ -36,6 +37,7 @@ class GameState:
         self._first_piece: bool = True
         self.piece_list = deque(piece_list) if piece_list is not None else None
         self.frames_per_cell: int = 0  # 0 = no fall simulation; set by Game or caller
+        self.ms_per_keypress: float = MS_PER_KEYPRESS
 
     def select_next_piece(self) -> Piece:
         if self.piece_list:
@@ -115,6 +117,7 @@ class GameState:
         new_state._first_piece = self._first_piece
         new_state.piece_list = self.piece_list  # not mutated during move evaluation
         new_state.frames_per_cell = self.frames_per_cell
+        new_state.ms_per_keypress = self.ms_per_keypress
         return new_state
 
     def new_piece(self) -> bool:

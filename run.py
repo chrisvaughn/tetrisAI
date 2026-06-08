@@ -11,6 +11,7 @@ import cv2
 
 from bot import RandomBot, WeightedBot, by_mode, get_pool, shutdown_pool
 from tetris import Game, GameState, Tetrominoes, frames_per_cell_by_level
+from tetris.constants import MS_PER_KEYPRESS_FCEUX
 from vision import FCEUX_OFFSETS, NESTOPIA_OFFSETS, Detectorist
 
 
@@ -135,6 +136,8 @@ def _run_with_emulator(args, bot, emulator):
 
     gs = GameState(args.seed)
     gs.frames_per_cell = frames_per_cell_by_level.get(args.level, 2)
+    if args.emulator_type == "fceux":
+        gs.ms_per_keypress = MS_PER_KEYPRESS_FCEUX
     offsets = FCEUX_OFFSETS if args.emulator_type == "fceux" else NESTOPIA_OFFSETS
     detector = Detectorist(offsets)
 
