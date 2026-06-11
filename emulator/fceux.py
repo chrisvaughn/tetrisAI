@@ -1,4 +1,5 @@
 import os
+import random
 import subprocess
 import time
 
@@ -48,7 +49,7 @@ class FCEUXEmulator:
     # IPC
     # ------------------------------------------------------------------
 
-    def _send_command(self, cmd: str, timeout: float = ACK_TIMEOUT):
+    def _send_command(self, cmd: str, timeout: float = ACK_TIMEOUT) -> bool:
         with open(CMD_FILE, "w") as f:
             f.write(cmd + "\n")
 
@@ -56,20 +57,26 @@ class FCEUXEmulator:
         while time.time() < deadline:
             if os.path.exists(ACK_FILE):
                 os.remove(ACK_FILE)
-                return
+                return True
             time.sleep(0.001)
-        raise TimeoutError(f"FCEUX bridge ack timeout for command: {cmd}")
+
+        # Timed out -- the bridge may be stuck (e.g. a game-over/topout
+        # animation froze its frame loop) and never wrote an ack. Clear any
+        # stale command/ack files so the next command starts clean, and let
+        # the caller carry on (e.g. the main loop's game_over() check) instead
+        # of crashing the whole run.
+        print(f"  [fceux] WARNING: bridge ack timeout for command: {cmd}")
+        for f in (CMD_FILE, ACK_FILE):
+            if os.path.exists(f):
+                os.remove(f)
+        return False
 
     def _press(self, buttons: list[str], hold_frames=HOLD_FRAMES, gap_frames=GAP_FRAMES):
         self._send_command(f"press:{','.join(buttons)}:{hold_frames}:{gap_frames}")
 
     def ping(self, timeout: float = ACK_TIMEOUT) -> bool:
         """Return True if the Lua bridge is alive and responding."""
-        try:
-            self._send_command("ping", timeout=timeout)
-            return True
-        except TimeoutError:
-            return False
+        return self._send_command("ping", timeout=timeout)
 
     # ------------------------------------------------------------------
     # Public interface (mirrors emulator/__init__.py Emulator)
@@ -88,6 +95,21 @@ class FCEUXEmulator:
         buttons = [self._move_to_button[m] for m in moves if m in self._move_to_button]
         if buttons:
             self._press(buttons)
+
+    def send_move_sequence(self, move_sequence: list[tuple], hold_frames=HOLD_FRAMES, gap_frames=GAP_FRAMES):
+        """Send a whole piece's keypress sequence as a single blocking IPC
+        round trip, instead of one round trip per keypress. This avoids
+        accumulating per-call IPC overhead while a piece is in flight, which
+        otherwise leaves the next piece falling uncontrolled long enough to
+        land on the stack before we can plan/send its moves."""
+        steps = []
+        for moves in move_sequence:
+            buttons = [self._move_to_button[m] for m in moves if m in self._move_to_button]
+            if buttons:
+                steps.append(",".join(buttons))
+        if not steps:
+            return
+        self._send_command(f"press_seq:{'|'.join(steps)}:{hold_frames}:{gap_frames}")
 
     def drop_on(self):
         if not self._dropping:
@@ -241,6 +263,12 @@ class FCEUXEmulator:
             print("  level_select not seen — trying one more start press (music screen?)")
             self._nav_press("start")
             self._wait_for_template("level_select")
+
+        # Random delay on the level-select screen to advance NES RNG.
+        # Capped at 0.5s to keep bridge timeouts from occurring.
+        rng_delay = random.uniform(0.0, 0.5)
+        print(f"  RNG delay: {rng_delay:.2f}s")
+        time.sleep(rng_delay)
 
         self._select_level(level)
 

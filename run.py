@@ -49,6 +49,26 @@ def get_weights_from_save(mode, save_file=None, save_gen=None):
     return by_mode[mode]
 
 
+def print_board_diff(expected, actual):
+    """Print a grid highlighting cells that differ between expected and actual boards.
+    '.' = both empty, '#' = both filled, 'E' = expected only, 'A' = actual only."""
+    print("Diff (E=expected only, A=actual only):")
+    print("-" * 12)
+    for ey, ay in zip(expected.board, actual.board):
+        print("|", end="")
+        for e, a in zip(ey, ay):
+            if e and a:
+                print("#", end="")
+            elif e:
+                print("E", end="")
+            elif a:
+                print("A", end="")
+            else:
+                print(".", end="")
+        print("|")
+    print("-" * 12)
+
+
 def print_final_stats(lines: int, piece_stats: Counter, combos: Counter):
     print(f"Lines Completed: {lines}")
     print(f"Piece Stats: Total {sum(piece_stats.values())}")
@@ -142,13 +162,19 @@ def _run_with_emulator(args, bot, emulator):
     detector = Detectorist(offsets)
 
     expected_state: Union[GameState, None] = None
+    last_move_info = None
     move_sequence_executed = False
     next_best_move, next_time_taken, next_moves_considered = None, None, None
     _diag_frame = 0
+    _last_new_piece_time = time.time()
+    _screen_wait_time = 0.0
+    _send_time = 0.0
     while True:
+        _loop_start = time.time()
         screen = emulator.get_latest_image()
         if screen is None:
             time.sleep(0.01)
+            _screen_wait_time += time.time() - _loop_start
             continue
         detector.update(screen)
         if detector.board.game_over():
@@ -162,13 +188,25 @@ def _run_with_emulator(args, bot, emulator):
 
         gs.update(detector.board, detector.current_piece, detector.next_piece)
         if gs.new_piece():
+            if args.debug:
+                now = time.time()
+                cycle = now - _last_new_piece_time
+                print(
+                    f"[timing] piece cycle: {cycle * 1000:.0f}ms "
+                    f"(screen_wait={_screen_wait_time * 1000:.0f}ms, send={_send_time * 1000:.0f}ms)"
+                )
+                _last_new_piece_time = now
+                _screen_wait_time = 0.0
+                _send_time = 0.0
             if expected_state is not None and not gs.board.compare(expected_state.board) or next_best_move is None:
                 if expected_state is not None and args.debug:
                     print("Board state not the same")
+                    print(f"Last move: {last_move_info}")
                     print("Expected:")
                     expected_state.board.print()
                     print("Actual:")
                     gs.board.print()
+                    print_board_diff(expected_state.board, gs.board)
                     print("\n")
                 # re-plan best move with current board state
                 print("Re-planning best move")
@@ -188,6 +226,10 @@ def _run_with_emulator(args, bot, emulator):
             move_sequence = best_move.to_sequence()
             # Use the end state from the bot move
             expected_state = best_move.end_state.clone() if best_move.end_state else gs.clone()
+            last_move_info = (
+                f"piece={gs.current_piece.name}, rotations={best_move.rotations}, "
+                f"translation={best_move.translation}, sequence={move_sequence}"
+            )
             if args.stats:
                 print(
                     f"Move {move_count}: Piece: {gs.current_piece.name}, "
@@ -213,9 +255,15 @@ def _run_with_emulator(args, bot, emulator):
         if move_sequence:
             move_sequence_executed = True
             next_best_move = None
-        while move_sequence:
-            moves = move_sequence.pop(0)
-            emulator.send_multiple_moves(moves)
+            _send_start = time.time()
+            if args.emulator_type == "fceux":
+                emulator.send_move_sequence(move_sequence)
+                move_sequence = []
+            else:
+                while move_sequence:
+                    moves = move_sequence.pop(0)
+                    emulator.send_multiple_moves(moves)
+            _send_time += time.time() - _send_start
 
         if soft_drop:
             emulator.drop_on()

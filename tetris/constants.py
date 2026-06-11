@@ -41,5 +41,5 @@ frames_per_cell_by_level = {
 MS_PER_KEYPRESS = 44.0
 
 # Time cost per keypress for the FCEUX file-based IPC path:
-# Lua bridge takes 3 NES frames per press (read + hold + gap) = 3 × 16.67ms ≈ 50ms
-MS_PER_KEYPRESS_FCEUX = 50.0
+# Lua bridge takes 2 NES frames per press (hold + gap) = 2 × 16.67ms ≈ 33ms
+MS_PER_KEYPRESS_FCEUX = 33.0

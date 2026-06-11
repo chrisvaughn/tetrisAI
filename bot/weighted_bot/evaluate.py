@@ -76,20 +76,15 @@ def execute_move(state: GameState, rot: int, trans: int):
     if trans > 0 and not state.move_right(trans):
         raise InvalidMove(state.current_piece)
 
-    # Fast drop: compute exact landing row from column peaks
+    # Fast drop: compute exact landing row from column peaks. Cells still
+    # above the visible board (negative row) must be included too, since
+    # they can be the ones that limit how far the piece can fall.
     px, py = state.current_piece.zero_based_corner_xy
     peaks = state.board._get_peaks()
-    drop = 21  # sentinel: no visible cells yet
-    for cy, cx in state.current_piece.cell_tuples:
-        y = py + cy
-        if y >= 0:
-            d = int(peaks[px + cx]) - y - 1
-            if d < drop:
-                drop = d
-    if drop < 21:  # at least one cell was visible
-        drop = max(0, drop)
-        if drop > 0:
-            state.current_piece.move_down(drop)
+    drop = min(int(peaks[px + cx]) - (py + cy) - 1 for cy, cx in state.current_piece.cell_tuples)
+    drop = max(0, drop)
+    if drop > 0:
+        state.current_piece.move_down(drop)
     while state.move_down_possible():
         state.move_down()
     state.move_down()
