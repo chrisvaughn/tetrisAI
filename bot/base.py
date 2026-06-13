@@ -14,12 +14,14 @@ class BotMove:
         score: float = 0.0,
         end_state=None,
         lines_completed: int = 0,
+        soft_drop_rows: int = 0,
     ):
         self.rotations = rotations
         self.translation = translation
         self.score = score
         self.end_state = end_state  # Expected game state after executing this move
         self.lines_completed = lines_completed  # Number of lines completed by this move
+        self.soft_drop_rows = soft_drop_rows  # Rows fallen on the final drop (NES soft-drop score if held)
 
     def to_sequence(self) -> List[Tuple[str]]:
         """Convert the move to a sequence of game actions"""

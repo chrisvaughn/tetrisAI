@@ -241,8 +241,27 @@ class GameState:
                 board[y, px + cx] = 1
         self.board.updated()
 
-    def check_game_over(self):
-        return np.any(self.board.board[0] != 0)
+    def check_game_over(self, piece: Piece = None) -> bool:
+        """Check whether `piece` (default: next_piece) would collide with the board
+        at its spawn position, matching NES Tetris's spawn-time game-over check.
+
+        Falls back to a row-0 occupancy check if no piece is available.
+        """
+        if piece is None:
+            piece = self.next_piece
+        if piece is None:
+            return bool(np.any(self.board.board[0] != 0))
+
+        board = self.board.board
+        shape = piece.shapes[piece.default_shape_idx]
+        for cy, cx in zip(*np.nonzero(shape)):
+            y = int(cy) - 2
+            x = int(cx) + 3
+            if y < 0:
+                continue
+            if board[y, x]:
+                return True
+        return False
 
     def check_full_lines(self) -> int:
         full_row_mask = np.all(self.board.board != 0, axis=1)

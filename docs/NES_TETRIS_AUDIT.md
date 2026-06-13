@@ -1,11 +1,19 @@
 # NES Tetris Implementation Audit
 
 **Date:** 2025-11-25
+**Updated:** 2026-06-13 — verified rotation, spawn, wall-kick, and entry-delay items against
+the NES Tetris internals reference at https://meatfighter.com/nintendotetrisai/
 **Purpose:** Verify Python implementation accuracy against NES Tetris specifications to ensure training translates to emulator performance
 
 ## Summary
 
-The current implementation captures the **core mechanics** of NES Tetris well, but has several discrepancies that could affect training effectiveness. Most critically, the rotation system and wall kick behavior need verification, and several timing-related mechanics are simplified or missing.
+The current implementation captures the **core mechanics** of NES Tetris well. The
+previously-unresolved rotation system, spawn position, and wall-kick questions have now
+been verified against the disassembly-derived reference above and found to be **correct as
+implemented** — no changes needed. The wall-kick item in particular was previously flagged
+as a HIGH-priority gap, but NES Tetris has **no wall kicks at all**, so the original
+recommendation to implement them would have made the simulation *less* accurate. Remaining
+real discrepancies are the top-out/spawn-collision check and soft drop scoring (see below).
 
 ---
 
@@ -56,7 +64,7 @@ The current implementation captures the **core mechanics** of NES Tetris well, b
 
 ## ⚠️ Discrepancies & Missing Features
 
-### 1. **Piece Rotation System** ⚠️ NEEDS VERIFICATION
+### 1. **Piece Rotation System** ✅ VERIFIED CORRECT
 
 **Current Implementation:**
 
@@ -64,24 +72,19 @@ The current implementation captures the **core mechanics** of NES Tetris well, b
 - Each piece has predefined rotation states (2-4 states per piece)
 - Rotation changes shape index: `(current + 1) % len(shapes)`
 
-**NES Tetris Rotation Specifications:**
+**NES Tetris Rotation Specifications (verified):**
 
-- I-piece: 2 rotation states
-- O-piece: 1 rotation state (no rotation)
-- S, Z: 2 rotation states
-- L, J, T: 4 rotation states
+- I, S, Z: 2 rotation states; O: 1 state; L, J, T: 4 states — matches `pieces.py` exactly
+- Each piece's cells sit in a 5×5 matrix with the pivot at the center cell `(2,2)`
+- Checked I, O, T, S, Z shape matrices cell-by-cell against the reference's
+  per-orientation relative-coordinate tables (e.g. T-down = `{(-1,0),(0,0),(1,0),(0,1)}`
+  about the pivot) — all match
 
-**Issues to Verify:**
-
-1. Are the rotation matrices correct for each piece and rotation state?
-2. Does rotation happen around the correct pivot point?
-3. In NES Tetris, each piece rotates around a specific center point - need to verify this matches
-
-**Recommendation:** Create rotation comparison tests against known NES piece positions
+**Status:** CORRECT - no changes needed
 
 ---
 
-### 2. **Wall Kicks and Floor Kicks** ❌ MISSING
+### 2. **Wall Kicks and Floor Kicks** ✅ CORRECTLY ABSENT
 
 **Current Implementation:**
 
@@ -89,41 +92,44 @@ The current implementation captures the **core mechanics** of NES Tetris well, b
 - Simple rotation validation - if collision detected, rotation is blocked
 - No wall kick or floor kick implementation
 
-**NES Tetris Behavior:**
+**NES Tetris Behavior (verified):**
 
-- Has limited wall kick mechanics
-- Some pieces can "kick" off walls during rotation
-- I-piece has special rotation handling near walls
+- NES Tetris has **no wall kicks or floor kicks of any kind**. The rotation-validation
+  routine checks all four cells of the rotated piece for playfield bounds and collisions;
+  if any check fails, the rotation is simply rejected and the piece stays in its prior
+  orientation/position.
+- "Spins" and "slides" that look like kicks in skilled play are just sequential
+  move+rotate inputs exploiting the lack of lock delay - not an engine kick mechanism.
 
 **Impact on Training:**
 
-- **HIGH** - Bots may learn strategies that don't work on actual NES
-- Missing wall kicks means fewer valid moves in tight spaces
-- Could lead to "trapped" situations that wouldn't occur on real NES
+- **NONE** - current implementation already matches NES exactly.
+- The previous recommendation to "implement wall kick behavior" was **incorrect** and
+  would have made the simulation diverge from real NES Tetris.
 
-**Recommendation:** Implement basic wall kick behavior
+**Status:** CORRECT - no changes needed
 
 ---
 
-### 3. **Initial Spawn Position** ⚠️ NEEDS VERIFICATION
+### 3. **Initial Spawn Position** ✅ VERIFIED CORRECT
 
 **Current Implementation:**
 
-- Location: `tetris/state.py:44`
-- All pieces spawn at position `(6, 1)` (center X, row 1 Y)
+- Location: `tetris/state.py:44` (`set_position(6, 1)`)
+- All pieces spawn with this 1-based center position, then use their default rotation
 
-**NES Tetris Behavior:**
+**NES Tetris Behavior (verified):**
 
-- Pieces spawn at specific positions depending on piece type
-- Some pieces spawn partially above the visible playfield
-- Spawn rotation varies by piece (e.g., I-piece spawns horizontal)
+- All tetrominoes spawn with their pivot at board cell `(X=5, Y=0)` (0-based)
+- Each piece type has a fixed spawn orientation: T→Td, J→Jd, Z→Zh, O→O, S→Sh, L→Ld, I→Ih
+- No spawn matrix has squares above row 0, so all 4 cells are visible immediately
 
-**Impact:**
+**Verification:** `set_position(6, 1)` plus the 5×5-matrix/corner-offset convention used in
+`Piece.zero_based_corner_xy` puts the pivot cell at `(5, 0)` for every piece — matches.
+The `default_shape_idx` for each piece in `pieces.py` was also checked against the
+Td/Jd/Zh/O/Sh/Ld/Ih spawn-orientation table and matches.
 
-- **MEDIUM** - May affect initial move calculations
-- Different spawn positions could change valid move sets
-
-**Recommendation:** Research exact NES spawn positions for each piece type
+**Status:** CORRECT - no changes needed
 
 ---
 
@@ -149,7 +155,7 @@ The current implementation captures the **core mechanics** of NES Tetris well, b
 
 ---
 
-### 5. **Entry Delay** ❌ MISSING
+### 5. **Entry Delay** ✅ CONFIRMED NON-ISSUE
 
 **Current Implementation:**
 
@@ -158,16 +164,20 @@ The current implementation captures the **core mechanics** of NES Tetris well, b
 
 **NES Tetris Behavior:**
 
-- 10-14 frame "entry delay" after piece locks before next piece spawns
-- During this time, line clearing animation occurs
+- ~10-18 frame "entry delay" (ARE) after a piece locks before the next piece spawns,
+  varying with lock height; line-clear animation adds further frames
 - No input accepted during entry delay
 
-**Impact:**
+**Impact (re-verified):**
 
-- **LOW** - Mainly affects timing, not strategy
-- Simulation doesn't need this for bot decision-making
+- **NONE for in-memory simulation** - `get_best_move()` is not frame-gated, so adding
+  idle frames between pieces would not change any move a bot selects.
+- **NONE for emulator mode** - `run.py`'s emulator loop already waits for the *actual*
+  appearance of the next piece via vision polling (`gs.new_piece()`), not a hardcoded
+  frame count, so ARE timing is handled empirically and can't desync.
 
-**Recommendation:** Document but don't implement unless doing frame-perfect simulation
+**Recommendation:** No action needed in either mode. Don't implement unless a future
+frame-perfect emulator-input-prediction feature specifically requires it.
 
 ---
 
@@ -261,46 +271,55 @@ The current implementation captures the **core mechanics** of NES Tetris well, b
 
 ---
 
-### 10. **Soft Drop Scoring** ⚠️ POTENTIALLY INCORRECT
+### 10. **Soft Drop Scoring** ✅ IMPLEMENTED (opt-in)
 
-**Current Implementation:**
+**Implementation:**
 
-- Location: `tetris/game.py:92-96`
-- Only line clear scoring implemented
-- No points for soft drop distance
+- `execute_move()` in `bot/weighted_bot/evaluate.py` now returns the number of rows the
+  piece fell during its final straight drop (the rotate/translate-then-drop pattern used
+  by every move matches NES's "final move must be down" requirement for soft-drop points)
+- Exposed as `Move.soft_drop_rows` / `BotMove.soft_drop_rows`
+- `train.py simulate_game()` adds `soft_drop_rows` to `score` when `soft_drop_score=True`,
+  controlled by the new `--soft-drop-score` flag (default off, so existing save files and
+  fitness scales are unaffected)
 
 **NES Tetris Behavior:**
 
-- 1 point per cell soft-dropped
-- Pressing down accelerates piece
+- 1 point per row soft-dropped, only counted if down was held continuously into the lock
 
 **Impact:**
 
-- **MEDIUM** - Affects score-based training
-- Line-based training is unaffected
+- **MEDIUM** - Affects score-based training when `--soft-drop-score` is enabled
+- Line-based training and default score training are unaffected (opt-in)
 
-**Recommendation:** Add soft drop scoring if training for score optimization
+**Recommendation:** Use `--fitness score --soft-drop-score` when training bots intended to
+play with soft drop enabled (`run.py --drop`); leave off for line-fitness or non-drop play.
 
 ---
 
-### 11. **Top-out Conditions** ⚠️ SIMPLIFIED
+### 11. **Top-out Conditions** ✅ FIXED
 
-**Current Implementation:**
+**Implementation:**
 
-- Location: `tetris/state.py:221-222`
-- Game over if any block in row 0
+- `GameState.check_game_over(piece=None)` in `tetris/state.py` now checks whether the
+  given piece (defaults to `next_piece`) collides with any occupied board cell at its
+  spawn position (pivot `(5,0)`, default orientation) — matching the verified NES
+  spawn-collision check.
+- `Game.run()` in `tetris/game.py` now clears full lines *before* running the
+  game-over check (previously it checked game-over first, which could falsely end the
+  game on a row-0 cell that was about to be cleared), and passes the upcoming piece
+  (`np`) to `check_game_over`.
 
 **NES Tetris Behavior:**
 
-- Game over if piece locks with any part in the top 2 rows (rows 0-1)
-- More specifically: if piece can't spawn fully
+- Game over if any of the next piece's 4 spawn cells are already occupied, checked after
+  line clears resolve
 
 **Impact:**
 
-- **LOW** - Current implementation is slightly more forgiving
-- May allow games to continue longer than they should
-
-**Recommendation:** Verify exact top-out logic
+- Previously **LOW**, but the old "any cell in row 0" check could end games too early
+  (a stray block at column 0/9 in row 0 with an otherwise-playable spawn zone) or too
+  late depending on piece shape. Now matches NES exactly.
 
 ---
 
@@ -410,24 +429,26 @@ def test_wall_kick_scenarios():
 ### Critical (Do Before Neural Net Training)
 
 1. ✅ Complete this audit document
-2. ⚠️ Verify rotation system accuracy
-3. ⚠️ Implement basic wall kick behavior
+2. ✅ Verify rotation system accuracy — confirmed correct, no code change
+3. ✅ Wall kicks — confirmed NES has none; current implementation already correct
 4. 🚀 Add game state recording to training
 5. 🚀 Create replay system
 6. 🚀 Add comprehensive validation metrics
 
 ### Important (Improves Training Quality)
 
-7. Verify spawn positions
-8. Add soft drop scoring
-9. Create rotation test suite
-10. Verify top-out logic
+7. ✅ Verify spawn positions — confirmed correct, no code change
+8. ✅ Add soft drop scoring — implemented as opt-in `--soft-drop-score` flag
+9. Create rotation test suite (optional now — manual verification passed, but a
+   regression test would lock this in)
+10. ✅ Fix top-out / spawn-collision logic — implemented
 
 ### Nice to Have (Polish)
 
-11. Document level progression design choice
-12. Add more detailed statistics tracking
-13. Create performance benchmarking tools
+11. ✅ Entry delay — confirmed non-issue for both simulation and emulator modes
+12. Document level progression design choice
+13. Add more detailed statistics tracking
+14. Create performance benchmarking tools
 
 ---
 
@@ -469,27 +490,25 @@ def test_wall_kick_scenarios():
 
 ## Conclusion
 
-The current implementation is **solid for basic bot training** but needs improvements for neural network training:
+The current implementation is **solid for basic bot training**, and the core
+move-generation mechanics (rotation, spawn positions, lack of wall kicks, entry delay)
+have now been verified as accurate to real NES Tetris:
 
 **Strengths:**
 
 - Core game mechanics are accurate
 - PRNG matches NES exactly
-- Good foundation for bot development
+- Rotation system, spawn positions, and absence of wall kicks all verified correct
+- Game state recording and replay infrastructure already exist (`tetris/recorder.py`,
+  `visualization/replay_viewer.py`)
 
-**Gaps:**
+**Remaining gaps:**
 
-- Rotation system needs verification
-- Missing wall kick behavior
-- Insufficient training data recording
-- No replay/visualization infrastructure
+- None blocking — top-out/spawn-collision and soft-drop scoring are now implemented
 
 **Next Steps:**
 
-1. Implement game state recording (can start training while building other features)
-2. Create replay visualization system
-3. Verify and document rotation behavior
-4. Add wall kick mechanics
-5. Build validation metric suite
+1. (Optional) Add a rotation regression test suite to lock in the verified behavior
+2. Continue building out validation metrics and statistics tracking
 
 With these improvements, the training environment will produce bots that transfer effectively to the NES emulator.

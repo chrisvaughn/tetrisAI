@@ -40,6 +40,12 @@ uv run python run.py --bot-model Random --seed 12345 --stats
 
 ```bash
 uv run python run.py --emulator --bot-model WeightedBotLines --stats
+
+# Use the FCEUX backend instead of Nestopia (file-based IPC bridge via fceux_bridge.lua)
+uv run python run.py --emulator --emulator-type fceux --bot-model WeightedBotLines --stats
+
+# Skip automated menu navigation; start the game yourself, then press Enter
+uv run python run.py --emulator --emulator-type fceux --manual-start
 ```
 
 **Using saved weights from training:**
@@ -85,6 +91,7 @@ uv run python train.py --no-parallel  # Disable parallel evaluation
 - `--fitness-fraction <float>`: Top fraction of games used for fitness score (default: 0.33)
 - `--seed-file <path>`: Seed population from best genome in a save file (repeatable)
 - `--seed-builtin <lines|score>`: Seed population from built-in defined weights (repeatable)
+- `--soft-drop-score`: With `--fitness score`, award NES soft-drop points (1 per row of each piece's final drop); default off so existing save files stay comparable
 
 **Auto-resume:** Training automatically resumes from the save file if it already exists — no extra flag needed. The save file defaults to `saves/save_{fitness_method}.pkl` (the `saves/` directory is gitignored).
 
@@ -204,7 +211,16 @@ uv run python visualize.py ./recordings --evolution --max-gen 50
 - Computer vision for real emulator integration
 - Detects board state, current piece, and next piece from screen captures
 - Works with 256x240 NES resolution
-- Emulator control via `emulator/` package (macOS-specific)
+- Emulator control via `emulator/` package (macOS-specific); supports two backends
+  selected via `--emulator-type`: Nestopia (`NESTOPIA_OFFSETS`) and FCEUX (`FCEUX_OFFSETS`)
+
+**Debugging tools:**
+
+- `vision_debug.py`: Live vision debugger — shows raw screen + detected board/piece side-by-side
+  (`uv run python vision_debug.py --emulator-name FCEUX`)
+- `fceux/`: Ground-truth validation toolkit. `tetris_logger.lua` runs in FCEUX and logs
+  authoritative piece/board state to `tetris_log.jsonl`; `compare_log.py` replays that log
+  against the Python engine to catch engine/vision discrepancies
 
 ## Development Notes
 

@@ -84,6 +84,7 @@ class WeightedBot(BaseBot):
             score=best_move.score,
             end_state=best_move.end_state,  # Include the expected end state
             lines_completed=best_move.lines_completed,  # Include lines completed
+            soft_drop_rows=best_move.soft_drop_rows,  # Rows fallen on final drop
         )
 
         return bot_move, time_taken, moves_considered

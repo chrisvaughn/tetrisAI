@@ -43,6 +43,7 @@ class GenomeFitness:
         lookahead=False,
         beam_width=None,
         fitness_fraction=0.33,
+        soft_drop_score=False,
     ):
         self.piece_lists = piece_lists
         self.result_key = result_key
@@ -52,6 +53,7 @@ class GenomeFitness:
         self.lookahead = lookahead
         self.beam_width = beam_width
         self.fitness_fraction = fitness_fraction
+        self.soft_drop_score = soft_drop_score
 
     def __call__(self, weights):
         bot = create_bot(
@@ -64,7 +66,7 @@ class GenomeFitness:
         )
         results = []
         for piece_list in self.piece_lists:
-            result = simulate_game(bot, piece_list, max_lines=self.max_lines)
+            result = simulate_game(bot, piece_list, max_lines=self.max_lines, soft_drop_score=self.soft_drop_score)
             results.append(result[self.result_key])
         results = sorted(results)
         results = results[int(len(results) * (1 - self.fitness_fraction)) :]
@@ -128,6 +130,7 @@ def main(args):
             args.lookahead,
             args.beam_width,
             args.fitness_fraction,
+            args.soft_drop_score,
         ),
         "lines": top_two_thirds_avg_of(
             piece_lists,
@@ -186,6 +189,7 @@ def top_two_thirds_avg_of(
     lookahead=False,
     beam_width=None,
     fitness_fraction=0.33,
+    soft_drop_score=False,
 ):
     return GenomeFitness(
         piece_lists,
@@ -196,10 +200,11 @@ def top_two_thirds_avg_of(
         lookahead,
         beam_width,
         fitness_fraction,
+        soft_drop_score,
     )
 
 
-def simulate_game(bot, piece_list: list[Piece], max_lines: int = None, level: int = 19):
+def simulate_game(bot, piece_list: list[Piece], max_lines: int = None, level: int = 19, soft_drop_score: bool = False):
     """Fast synchronous game simulation for training — no threading, no sleeping."""
     state = GameState(piece_list=list(piece_list))
     state.board = Board()
@@ -242,6 +247,9 @@ def simulate_game(bot, piece_list: list[Piece], max_lines: int = None, level: in
                     state.frames_per_cell = frames_per_cell_by_level.get(level, 1)
             if cleared <= len(score_by_number_of_lines_cleared):
                 score += score_by_number_of_lines_cleared[cleared - 1] * (level + 1)
+
+        if soft_drop_score:
+            score += best_move.soft_drop_rows
 
         state.board = end.board
         cp = state.select_next_piece()
@@ -330,6 +338,13 @@ if __name__ == "__main__":
         help="stop each evaluation game after this many lines cleared (0 = no cap)",
     )
     parser.add_argument("--scoring", choices=["v1", "v2"], default="v2")
+    parser.add_argument(
+        "--soft-drop-score",
+        dest="soft_drop_score",
+        action="store_true",
+        default=False,
+        help="award NES soft-drop points (1 per row of the final drop) for --fitness score",
+    )
     parser.add_argument(
         "--bot-model", choices=["WeightedBot", "RandomBot"], default="WeightedBot", help="bot model to train"
     )

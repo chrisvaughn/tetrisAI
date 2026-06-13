@@ -34,6 +34,7 @@ class Move:
     final_state: Union[GameState, None]
     lines_completed: int
     end_state: GameState
+    soft_drop_rows: int = 0
 
     def to_sequence(self) -> List[Tuple[str]]:
         rotations = []
@@ -56,7 +57,14 @@ class Move:
         return seq
 
 
-def execute_move(state: GameState, rot: int, trans: int):
+def execute_move(state: GameState, rot: int, trans: int) -> int:
+    """Apply rotation/translation then drop the piece straight down to lock.
+
+    Returns the number of rows the piece fell during that final straight drop —
+    the row count that would be awarded as soft-drop score in NES Tetris if the
+    player held down continuously into the lock (the rotation/translation above
+    represents positioning, and this drop is the final, unshifted "move down").
+    """
     # Simulate piece falling while the player executes the move sequence.
     # rot=3 maps to 1 CCW keypress in practice (see BotMove.to_sequence).
     if state.frames_per_cell > 0:
@@ -88,6 +96,7 @@ def execute_move(state: GameState, rot: int, trans: int):
     while state.move_down_possible():
         state.move_down()
     state.move_down()
+    return drop
 
 
 class Evaluator:
@@ -124,7 +133,7 @@ class Evaluator:
         for trans in range(-left_trans, right_trans + 1):
             state = self._initial_state.clone()
             try:
-                execute_move(state, rot, trans)
+                soft_drop_rows = execute_move(state, rot, trans)
             except InvalidMove:
                 continue
 
@@ -140,6 +149,7 @@ class Evaluator:
                 None,
                 parameters["values"]["lines"],
                 state,
+                soft_drop_rows,
             )
             moves.append(move)
         return moves

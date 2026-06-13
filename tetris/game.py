@@ -63,17 +63,17 @@ class Game:
             self.state.update(self.state.board, cp, np)
             self.state_lock.release()
             if not moved_down:
-                self.game_over = self.state.check_game_over()
+                lines = self.state.check_full_lines()
+                if lines > 0:
+                    self.lines += lines
+                    self._advance_level_if_needed()
+                    if lines <= len(score_by_number_of_lines_cleared):
+                        self.score += score_by_number_of_lines_cleared[lines - 1] * (self.level + 1)
+                    self.line_combos[lines] += 1
+                self.game_over = self.state.check_game_over(np)
                 if self.game_over:
                     return self.lines
                 else:
-                    lines = self.state.check_full_lines()
-                    if lines > 0:
-                        self.lines += lines
-                        self._advance_level_if_needed()
-                        if lines <= len(score_by_number_of_lines_cleared):
-                            self.score += score_by_number_of_lines_cleared[lines - 1] * (self.level + 1)
-                        self.line_combos[lines] += 1
                     cp = np
                     np = self.state.select_next_piece()
                     np.set_position(6, 1)
