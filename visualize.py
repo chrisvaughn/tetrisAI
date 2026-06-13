@@ -5,7 +5,7 @@ Show the top N genomes from a training save file as live simultaneous games.
 Usage:
     uv run python visualize.py                      # 9 bots (3x3), safe alongside training
     uv run python visualize.py --count 25           # 5x5 grid (pause training first)
-    uv run python visualize.py --save-file save_score.pkl
+    uv run python visualize.py --save-file saves/save_score.pkl
 
 Press 'q' to quit. The display auto-reloads when the save file changes.
 """
@@ -305,7 +305,7 @@ def stop_bots(bots):
 
 def main():
     parser = argparse.ArgumentParser(description="Visualize top training genomes as live games")
-    parser.add_argument("--save-file", default="save_lines.pkl")
+    parser.add_argument("--save-file", default="saves/save_lines.pkl")
     parser.add_argument("--count", type=int, default=16, help="number of bots to show (default 16)")
     parser.add_argument("--fps", type=int, default=10)
     args = parser.parse_args()

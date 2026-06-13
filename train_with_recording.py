@@ -75,7 +75,8 @@ def main(args):
     if args.save_file:
         filename = args.save_file
     else:
-        filename = f"save_{args.fitness_method}.pkl"
+        filename = f"saves/save_{args.fitness_method}.pkl"
+    Path(filename).parent.mkdir(parents=True, exist_ok=True)
 
     ga = GA(
         args.population,

@@ -134,3 +134,6 @@ dmypy.json
 neat-checkpoint-*
 keypress_log.csv
 .envrc
+
+# Training save files / checkpoints
+saves/

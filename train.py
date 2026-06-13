@@ -84,7 +84,8 @@ def main(args):
     if args.save_file:
         filename = args.save_file
     else:
-        filename = f"save_{args.fitness_method}.pkl"
+        filename = os.path.join("saves", f"save_{args.fitness_method}.pkl")
+    os.makedirs(os.path.dirname(filename) or ".", exist_ok=True)
 
     piece_lists = []
     if os.path.isfile(filename):

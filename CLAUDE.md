@@ -45,7 +45,7 @@ uv run python run.py --emulator --bot-model WeightedBotLines --stats
 **Using saved weights from training:**
 
 ```bash
-uv run python run.py --bot-model WeightedBotScore --save-file save_score.pkl --save-gen 50
+uv run python run.py --bot-model WeightedBotScore --save-file saves/save_score.pkl --save-gen 50
 ```
 
 **Common flags:**
@@ -68,7 +68,7 @@ uv run python run.py --bot-model WeightedBotScore --save-file save_score.pkl --s
 uv run python train.py --fitness lines --population 100 --generations 100
 
 # Train for score optimization
-uv run python train.py --fitness score --population 100 --generations 50 --save-file custom_save.pkl
+uv run python train.py --fitness score --population 100 --generations 50 --save-file saves/custom_save.pkl
 
 # Train with lookahead (slower but stronger)
 uv run python train.py --fitness lines --lookahead --beam-width 10
@@ -86,7 +86,7 @@ uv run python train.py --no-parallel  # Disable parallel evaluation
 - `--seed-file <path>`: Seed population from best genome in a save file (repeatable)
 - `--seed-builtin <lines|score>`: Seed population from built-in defined weights (repeatable)
 
-**Auto-resume:** Training automatically resumes from the save file if it already exists — no extra flag needed. The save file defaults to `save_{fitness_method}.pkl`.
+**Auto-resume:** Training automatically resumes from the save file if it already exists — no extra flag needed. The save file defaults to `saves/save_{fitness_method}.pkl` (the `saves/` directory is gitignored).
 
 ### Testing
 
