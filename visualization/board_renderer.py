@@ -46,7 +46,10 @@ class BoardRenderer:
                 self._draw_ghost(img, state.board.board, ghost_state.board.board)
 
         if state.current_piece is not None:
-            self._draw_piece(img, state.current_piece, PIECE_COLORS.get(state.current_piece.name, TEXT_COLOR))
+            board_arr = state.board.board if state.board is not None else None
+            self._draw_piece(
+                img, state.current_piece, PIECE_COLORS.get(state.current_piece.name, TEXT_COLOR), board=board_arr
+            )
 
         if self.show_next and state.next_piece is not None:
             self._draw_next_piece(img, state.next_piece)
@@ -70,11 +73,16 @@ class BoardRenderer:
                 cv2.rectangle(img, (x1, y1), (x2, y2), color, -1)
                 cv2.rectangle(img, (x1, y1), (x2, y2), GRID_LINE_COLOR, 1)
 
-    def _draw_piece(self, img: np.ndarray, piece, color, fill: bool = True):
+    def _draw_piece(self, img: np.ndarray, piece, color, fill: bool = True, board: np.ndarray = None):
         px, py = piece.zero_based_corner_xy
         for cy, cx in piece.cell_tuples:
             x, y = px + cx, py + cy
             if 0 <= x < 10 and 0 <= y < 20:
+                # Skip cells already locked into the board: a transient state
+                # can briefly have current_piece pointing at the just-locked
+                # piece before the next piece is assigned.
+                if board is not None and board[y, x] != 0:
+                    continue
                 x1, y1 = x * self.block_size, y * self.block_size
                 x2, y2 = x1 + self.block_size, y1 + self.block_size
                 if fill:

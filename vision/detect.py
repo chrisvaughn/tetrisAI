@@ -3,6 +3,7 @@ from typing import Tuple, Union
 import numpy as np
 
 from tetris import Board, Piece, Tetrominoes
+from tetris.pieces import PIECE_TYPE_IDS
 
 pixel_threshold_black = 40
 
@@ -41,6 +42,9 @@ class Detectorist:
         self._detection_count: int = 0
         # Temporal board/piece separation (option-2 tracker)
         self._locked_board_arr = np.zeros((Board.rows, Board.columns), dtype=int)
+        # Parallel to `_locked_board_arr`: piece-type id (1-7) of the piece that
+        # locked each cell, for visualization color-coding.
+        self._locked_piece_board = np.zeros((Board.rows, Board.columns), dtype=int)
         self._prev_piece_candidates: Union[np.ndarray, None] = None
         self._no_movement_frames: int = 0
 
@@ -66,6 +70,7 @@ class Detectorist:
     def _detect(self):
         self._detect_board()
         self._detect_current_piece()
+        self._board.piece_board = self._locked_piece_board.copy()
         self._detection_count += 1
 
     def _detect_board(self):
@@ -101,6 +106,13 @@ class Detectorist:
                 break
         self._next_piece = next_piece
         return next_piece
+
+    def _locking_piece_id(self) -> int:
+        """Piece-type id of the piece currently being locked (the most recently
+        detected current piece), or 0 if unknown."""
+        if self._current_piece is None:
+            return 0
+        return PIECE_TYPE_IDS.get(self._current_piece.name, 0)
 
     def _bootstrap_locked_board(self, board_arr: np.ndarray) -> np.ndarray:
         """Seed _locked_board_arr on the first frame using contiguous-bottom-height."""
@@ -161,6 +173,8 @@ class Detectorist:
 
         # Nothing above the locked board → ARE / idle period; refresh locked state.
         if not np.any(piece_candidates):
+            newly_locked = curr_raw.astype(bool) & ~self._locked_board_arr.astype(bool)
+            self._locked_piece_board[newly_locked] = self._locking_piece_id()
             self._locked_board_arr = curr_raw.copy()
             self._prev_piece_candidates = None
             self._no_movement_frames = 0
@@ -181,6 +195,7 @@ class Detectorist:
             bottom_mask[bottom_start:bottom_end] = piece_candidates[bottom_start:bottom_end]
             if self._piece_resting(bottom_mask):
                 self._locked_board_arr[bottom_start:bottom_end] |= piece_candidates[bottom_start:bottom_end]
+                self._locked_piece_board[bottom_mask.astype(bool)] = self._locking_piece_id()
                 piece_candidates = piece_candidates.copy()
                 piece_candidates[bottom_start:bottom_end] = 0
                 self._prev_piece_candidates = None
@@ -194,6 +209,7 @@ class Detectorist:
             if self._no_movement_frames >= _LOCK_CONFIRMATION_FRAMES and self._piece_resting(piece_candidates):
                 # Piece has been stationary long enough and is resting on the
                 # stack/floor — treat it as locked.
+                self._locked_piece_board[piece_candidates.astype(bool)] = self._locking_piece_id()
                 self._locked_board_arr = curr_raw.copy()
                 self._prev_piece_candidates = None
                 self._no_movement_frames = 0
