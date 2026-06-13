@@ -383,3 +383,19 @@ Tetrominoes = [
         0,
     ),
 ]
+
+# 1-based piece-type ids for the placed-block board, used by visualization to
+# color-code locked pieces by type.
+PIECE_TYPE_IDS = {piece.name: idx + 1 for idx, piece in enumerate(Tetrominoes)}
+
+# Standard Tetris guideline colors (BGR, for OpenCV) keyed by piece name / piece-type id.
+PIECE_COLORS = {
+    "i": (255, 0, 0),  # Blue
+    "o": (0, 255, 255),  # Yellow
+    "t": (255, 0, 255),  # Purple
+    "s": (0, 255, 0),  # Green
+    "z": (0, 0, 255),  # Red
+    "j": (255, 128, 0),  # Orange
+    "l": (255, 255, 255),  # White
+}
+PIECE_COLORS_BY_ID = {PIECE_TYPE_IDS[name]: color for name, color in PIECE_COLORS.items()}

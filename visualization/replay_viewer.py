@@ -10,7 +10,7 @@ from typing import List
 import cv2
 import numpy as np
 
-from tetris.pieces import Tetrominoes
+from tetris.pieces import PIECE_COLORS, PIECE_COLORS_BY_ID, Tetrominoes
 from tetris.recorder import GameRecording
 
 
@@ -36,15 +36,9 @@ class ReplayRenderer:
         self.show_next = show_next
 
         # Colors for different pieces (BGR format for OpenCV)
-        self.colors = {
-            "i": (255, 0, 0),  # Blue
-            "o": (0, 255, 255),  # Yellow
-            "t": (255, 0, 255),  # Purple
-            "s": (0, 255, 0),  # Green
-            "z": (0, 0, 255),  # Red
-            "j": (255, 128, 0),  # Orange
-            "l": (255, 255, 255),  # White
-        }
+        self.colors = PIECE_COLORS
+        # Locked-block colors keyed by the 1-7 piece-type id stored in piece_board_state.
+        self.colors_by_id = PIECE_COLORS_BY_ID
 
         # Calculate dimensions
         self.board_width = 10 * block_size
@@ -74,7 +68,7 @@ class ReplayRenderer:
         img = np.zeros((self.total_height, self.total_width, 3), dtype=np.uint8)
 
         # Draw board
-        self._draw_board(img, snapshot.board_state)
+        self._draw_board(img, snapshot.board_state, snapshot.piece_board_state)
 
         # Draw current piece
         self._draw_current_piece(
@@ -95,11 +89,16 @@ class ReplayRenderer:
 
         return img
 
-    def _draw_board(self, img: np.ndarray, board: np.ndarray):
+    def _draw_board(self, img: np.ndarray, board: np.ndarray, piece_board: np.ndarray = None):
         """Draw the board state."""
         for y in range(20):
             for x in range(10):
-                color = (100, 100, 100) if board[y, x] != 0 else (20, 20, 20)
+                if board[y, x] == 0:
+                    color = (20, 20, 20)
+                elif piece_board is not None:
+                    color = self.colors_by_id.get(int(piece_board[y, x]), (100, 100, 100))
+                else:
+                    color = (100, 100, 100)
                 x1 = x * self.block_size
                 y1 = y * self.block_size
                 x2 = x1 + self.block_size

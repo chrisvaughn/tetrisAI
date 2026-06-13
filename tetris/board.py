@@ -10,16 +10,21 @@ class Board:
     columns: int = 10
     rows: int = 20
 
-    def __init__(self, board: np.ndarray = None):
+    def __init__(self, board: np.ndarray = None, piece_board: np.ndarray = None):
         if board is None:
             board = np.zeros((Board.rows, Board.columns), dtype=int)
         self.board = board
+        if piece_board is None:
+            piece_board = np.zeros((Board.rows, Board.columns), dtype=int)
+        # Parallel to `board`: 0 = empty, 1-7 = locked piece type (for visualization only).
+        self.piece_board = piece_board
         self._peaks = None
         self._peaks_list = None
 
     def clone(self):
         new_board = Board.__new__(Board)
         new_board.board = self.board.copy()
+        new_board.piece_board = self.piece_board.copy()
         new_board._peaks = None
         new_board._peaks_list = None
         return new_board

@@ -13,6 +13,7 @@ from bot import RandomBot, WeightedBot, by_mode, get_pool, shutdown_pool
 from tetris import Game, GameState, Tetrominoes, frames_per_cell_by_level
 from tetris.constants import MS_PER_KEYPRESS_FCEUX
 from vision import FCEUX_OFFSETS, NESTOPIA_OFFSETS, Detectorist
+from visualization import LiveViewer
 
 
 def get_bot(bot_model, save_file=None, save_gen=None, lookahead=False, beam_width=None, scoring="v2"):
@@ -100,6 +101,7 @@ def run_in_memory(args, bot):
     game = Game(seed, args.level)
     game.display()
     game.start()
+    viewer = LiveViewer(window_name="Bot View") if args.visualize else None
     while not game.game_over:
         if cv2.waitKey(1) == ord("q"):
             cv2.destroyAllWindows()
@@ -111,6 +113,10 @@ def run_in_memory(args, bot):
             bot.update_state(game.state)
             best_move, time_taken, moves_considered = bot.get_best_move(debug=False)
             move_sequence = best_move.to_sequence()
+            if viewer is not None:
+                info = {"Move": move_count, "Lines": game.lines, "Piece": game.state.current_piece.name}
+                if not viewer.update(game.state, best_move, info=info):
+                    break
             if args.stats:
                 print(
                     f"Move {move_count}: Piece: {game.state.current_piece.name}, "
@@ -127,6 +133,8 @@ def run_in_memory(args, bot):
         elif drop_enabled and soft_drop:
             game.move_down()
 
+    if viewer is not None:
+        viewer.close()
     print("Game Over")
     print_final_stats(game.lines, game.piece_stats, game.line_combos)
 
@@ -169,6 +177,8 @@ def _run_with_emulator(args, bot, emulator):
     _last_new_piece_time = time.time()
     _screen_wait_time = 0.0
     _send_time = 0.0
+    viewer = LiveViewer(window_name="Bot View") if args.visualize else None
+    decision_move = None
     while True:
         _loop_start = time.time()
         screen = emulator.get_latest_image()
@@ -241,6 +251,7 @@ def _run_with_emulator(args, bot, emulator):
                 lines = best_move.lines_completed
                 line_combos[lines] += 1
                 lines_completed += lines
+            decision_move = best_move
         elif move_sequence_executed and next_best_move is None:
             # we can plan the next move based on the expected board state and the next piece
             next_piece = detector.detect_next_piece()
@@ -268,6 +279,14 @@ def _run_with_emulator(args, bot, emulator):
         if soft_drop:
             emulator.drop_on()
 
+        if viewer is not None:
+            info = {"Move": move_count, "Lines": lines_completed}
+            if not viewer.update(gs, decision_move, info=info):
+                break
+            decision_move = None
+
+    if viewer is not None:
+        viewer.close()
     print("Game Over")
     print_final_stats(lines_completed, piece_stats, line_combos)
 
@@ -343,6 +362,12 @@ if __name__ == "__main__":
         type=int,
         default=None,
         help="limit lookahead to top-N level-1 candidates (default: all)",
+    )
+    parser.add_argument(
+        "--visualize",
+        action="store_true",
+        default=False,
+        help="show a live view of the bot's board state and planned move",
     )
 
     args = parser.parse_args()

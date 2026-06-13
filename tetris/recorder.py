@@ -39,14 +39,18 @@ class GameSnapshot:
     move_score: Optional[float] = None
     evaluation_time_ms: Optional[float] = None
     moves_considered: Optional[int] = None
+    # Locked-piece-type ids (1-7, 0 = empty) for each board cell, used to color-code
+    # placed pieces by type in the viewers. RLE compressed when saved. Older
+    # recordings won't have this field populated.
+    piece_board_state: Optional[np.ndarray] = None
 
-    def compress_board(self):
-        """Compress board state using run-length encoding."""
-        # Simple RLE: store (value, count) pairs
-        if len(self.board_state.shape) != 2:
-            return self.board_state
+    @staticmethod
+    def _compress(board: np.ndarray):
+        """Compress a board array using run-length encoding."""
+        if board is None or len(board.shape) != 2:
+            return board
 
-        flat = self.board_state.flatten()
+        flat = board.flatten()
         compressed = []
         if len(flat) > 0:
             current_val = flat[0]
@@ -61,14 +65,23 @@ class GameSnapshot:
             compressed.append((current_val, count))
         return compressed
 
-    def decompress_board(self, compressed, shape=(20, 10)):
-        """Decompress RLE board state."""
-        if isinstance(compressed, np.ndarray):
+    @staticmethod
+    def _decompress(compressed, shape=(20, 10)):
+        """Decompress an RLE-encoded board array."""
+        if compressed is None or isinstance(compressed, np.ndarray):
             return compressed
         flat = []
         for val, count in compressed:
             flat.extend([val] * count)
         return np.array(flat, dtype=int).reshape(shape)
+
+    def compress_board(self):
+        """Compress board state using run-length encoding."""
+        return self._compress(self.board_state)
+
+    def decompress_board(self, compressed, shape=(20, 10)):
+        """Decompress RLE board state."""
+        return self._decompress(compressed, shape)
 
 
 @dataclass
@@ -99,6 +112,8 @@ class GameRecording:
         for snapshot in self.snapshots:
             if isinstance(snapshot.board_state, np.ndarray):
                 snapshot.board_state = snapshot.compress_board()
+            if isinstance(snapshot.piece_board_state, np.ndarray):
+                snapshot.piece_board_state = GameSnapshot._compress(snapshot.piece_board_state)
 
     def save(self, filepath: Union[str, Path], compress=True):
         """Save recording to file."""
@@ -123,6 +138,9 @@ class GameRecording:
         for snapshot in recording.snapshots:
             if not isinstance(snapshot.board_state, np.ndarray):
                 snapshot.board_state = snapshot.decompress_board(snapshot.board_state)
+            piece_board_state = getattr(snapshot, "piece_board_state", None)
+            if not isinstance(piece_board_state, np.ndarray):
+                snapshot.piece_board_state = GameSnapshot._decompress(piece_board_state)
 
         return recording
 
@@ -208,6 +226,7 @@ class GameRecorder:
             frame_number=self.frame_counter,
             piece_number=self.piece_counter,
             board_state=game_state.board.board.copy(),
+            piece_board_state=game_state.board.piece_board.copy(),
             current_piece_name=current_piece.name if current_piece else "",
             current_piece_rotation=(current_piece.current_shape_idx if current_piece else 0),
             current_piece_x=current_piece._x if current_piece else 0,

@@ -1,5 +1,7 @@
 """Visualization tools for training analysis and replay."""
 
+from .board_renderer import BoardRenderer
+from .live_viewer import LiveViewer
 from .replay_viewer import (
     MultiReplayViewer,
     ReplayRenderer,
@@ -8,6 +10,8 @@ from .replay_viewer import (
 )
 
 __all__ = [
+    "BoardRenderer",
+    "LiveViewer",
     "ReplayRenderer",
     "MultiReplayViewer",
     "view_generation_comparison",

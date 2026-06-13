@@ -6,7 +6,7 @@ import numpy as np
 
 from .board import Board
 from .constants import MS_PER_KEYPRESS
-from .pieces import Piece, Tetrominoes
+from .pieces import PIECE_TYPE_IDS, Piece, Tetrominoes
 
 
 class InvalidMove(Exception):
@@ -38,6 +38,7 @@ class GameState:
         self.piece_list = deque(piece_list) if piece_list is not None else None
         self.frames_per_cell: int = 0  # 0 = no fall simulation; set by Game or caller
         self.ms_per_keypress: float = MS_PER_KEYPRESS
+        self._renderer = None  # lazily created BoardRenderer, used by display()
 
     def select_next_piece(self) -> Piece:
         if self.piece_list:
@@ -50,53 +51,15 @@ class GameState:
         return p
 
     def display(self):
-        block_size = 28
-        virtual_board = np.zeros((Board.rows * block_size, Board.columns * block_size, 3), dtype=np.uint8)
-        for y, cols in enumerate(self.board.board):
-            for x, cell in enumerate(cols):
-                cv2.rectangle(
-                    virtual_board,
-                    (x * block_size, y * block_size),
-                    ((x + 1) * block_size, (y + 1) * block_size),
-                    (255, 255, 255),
-                    cv2.FILLED if cell != 0 else None,
-                )
-        if self.current_piece:
-            px, py = self.current_piece.zero_based_corner_xy
-            for (y, x), value in np.ndenumerate(self.current_piece.shape):
-                if value != 0:
-                    cv2.rectangle(
-                        virtual_board,
-                        (
-                            (px + x) * block_size,
-                            (py + y) * block_size,
-                        ),
-                        (
-                            (px + x + 1) * block_size,
-                            (py + y + 1) * block_size,
-                        ),
-                        (255, 0, 0),
-                        cv2.FILLED,
-                    )
+        # Lazy import: visualization.board_renderer imports tetris.state, so importing
+        # it at module load time would create a circular import.
+        from visualization.board_renderer import BoardRenderer
 
-        font = cv2.FONT_HERSHEY_SIMPLEX
-        org = (block_size * 2, block_size * 2)
-        font_scale = 1
-        color = (255, 255, 0)
-        thickness = 2
+        if self._renderer is None:
+            self._renderer = BoardRenderer(block_size=28)
 
-        cv2.putText(
-            virtual_board,
-            str(self._completed_lines),
-            org,
-            font,
-            font_scale,
-            color,
-            thickness,
-            cv2.LINE_AA,
-        )
-
-        cv2.imshow("Virtual Board", virtual_board)
+        img = self._renderer.render(self, info={"Lines": self._completed_lines})
+        cv2.imshow("Virtual Board", img)
 
     def update(self, board: Board, current_piece: Piece, next_piece: Piece = None):
         self.board = board
@@ -118,6 +81,7 @@ class GameState:
         new_state.piece_list = self.piece_list  # not mutated during move evaluation
         new_state.frames_per_cell = self.frames_per_cell
         new_state.ms_per_keypress = self.ms_per_keypress
+        new_state._renderer = None
         return new_state
 
     def new_piece(self) -> bool:
@@ -235,10 +199,13 @@ class GameState:
     def place_piece_on_board(self):
         px, py = self.current_piece.zero_based_corner_xy
         board = self.board.board
+        piece_board = self.board.piece_board
+        piece_id = PIECE_TYPE_IDS[self.current_piece.name]
         for cy, cx in self.current_piece.cell_tuples:
             y = py + cy
             if y >= 0:
                 board[y, px + cx] = 1
+                piece_board[y, px + cx] = piece_id
         self.board.updated()
 
     def check_game_over(self, piece: Piece = None) -> bool:
@@ -271,6 +238,12 @@ class GameState:
             removed_lines.fill(0)
             clean_board = self.board.board[~full_row_mask]
             self.board.board = np.vstack((removed_lines, clean_board))
+
+            removed_piece_lines = self.board.piece_board[full_row_mask]
+            removed_piece_lines.fill(0)
+            clean_piece_board = self.board.piece_board[~full_row_mask]
+            self.board.piece_board = np.vstack((removed_piece_lines, clean_piece_board))
+
             self.board.updated()
         self._completed_lines += full_lines
         return full_lines
